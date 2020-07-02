@@ -1,0 +1,27 @@
+.content-items-wrapper {
+    /*width: 25rem;
+    margin-top: 1rem;*/
+    padding:1rem;
+}
+
+.radio-popup-content {
+    width: 19rem !important;
+    margin-top: 0rem !important;
+}
+
+.content-items-body {
+    width: 25rem;
+    max-height: 18rem;
+    overflow-y: auto;
+    padding-top: 1rem;
+}
+
+.checkbox-content-width {
+    width: auto;
+    vertical-align: "center";
+}
+
+.content-items-headerfooter {
+    width: 25rem;
+    height: 3rem;
+}

@@ -1,0 +1,245 @@
+﻿.close-project-container {
+    width: 75rem;
+    margin-left: 2rem;
+}
+
+.dialog-container-close-project {
+    width: 80rem !important;
+    max-height: 56rem !important;
+    padding-left: 0.5rem !important;
+}
+
+.no-participant-joined {
+    margin-left: 35%;
+    margin-top: 7rem;
+    font-weight: 700;
+}
+
+.app-name-container {
+    padding-left: 0 !important;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+    .app-name-container .ui-itemlayout__content div span {
+        font-size: 1rem;
+    }
+
+.project-closure-image {
+    width: 6rem;
+    height: 4rem;
+}
+
+.error-text {
+    color: red;
+}
+
+.project-closure-heading {
+    padding-left: 0 !important;
+    margin-bottom: 1rem;
+    margin-top: 2rem;
+}
+
+.project-closure-heading-content {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.app-dialog-heading {
+    font-weight: 100 !important;
+}
+
+.app-logo-container div {
+    margin-top: 0rem !important;
+}
+
+.table-user-cell {
+    max-width: 24rem !important;
+}
+
+.skills-input input {
+    width: 22rem;
+    margin-top: 1rem;
+}
+
+.description-textarea {
+    width: 24rem;
+    height: 3rem !important;
+    margin-top: 0.5rem !important;
+}
+
+.ui-table__row {
+    height: auto !important;
+}
+
+.project-members-heading {
+    font-weight: 100;
+    padding-left: 0rem !important;
+}
+
+.skills-container {
+    margin-bottom: 1rem;
+}
+
+.input-fields-margin-between-close-project {
+    margin-top: 4rem;
+}
+
+.description-textarea {
+    height: 10rem !important;
+}
+
+.nonmobile-endorse-skill-list {
+    display: block !important;
+    max-height: 30rem;
+    overflow: scroll;
+}
+
+
+/*acquired skills css*/
+
+.nonmobile-acquired-skill-list {
+    display: block !important;
+    max-height: 40rem;
+    overflow: scroll;
+}
+
+.skills-table-user-cell {
+    max-width: 35rem !important;
+}
+
+.project-title {
+    font-weight: 700;
+}
+
+.avatar-container {
+    width: 3rem !important;
+    height: 3rem !important;
+}
+
+    .avatar-container span {
+        height: 2.5rem !important;
+        width: 2.5rem !important;
+        margin-top: 0.3rem;
+    }
+
+    .avatar-container div {
+        margin-top: -0.5rem !important;
+        font-size: 1.2rem;
+    }
+
+.skills-label-wrapper {
+    padding-top: 0.5rem !important;
+    padding-bottom: 1.5rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-top: 1rem !important;
+    height: 2.67rem !important;
+    margin-right: 0.33rem !important;
+}
+
+    .skills-label-wrapper div.ui-box {
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 7rem;
+        text-overflow: ellipsis;
+    }
+
+.project-endorsee {
+    padding-top: 0.5rem !important;
+    padding-bottom: 1.5rem !important;
+    margin-top: 1rem !important;
+    height: 2.67rem !important;
+    margin-right: 0.33rem !important;
+}
+
+
+.skills-text-form {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 15rem;
+    white-space: nowrap;
+}
+
+.skills-acquired-header {
+    background-color: #F3F2F0;
+    padding-left: 0.8rem;
+    font-weight: 700;
+}
+
+.nonmobile-acquired-skill-list .ui-table__header {
+    background-color: #F3F2F0;
+}
+
+.table-rows {
+    margin-top: 1.2rem !important;
+}
+
+    .table-rows .ui-table__row:first-child {
+        height: 4rem !important;
+    }
+
+/*add new project css*/
+
+
+.skills-flex {
+    height: auto;
+    position: relative;
+    width: inherit;
+    margin-bottom: 1rem;
+}
+
+
+.skills-new-project .skills-label-wrapper {
+    padding-top: 1.3rem !important;
+    padding-bottom: 1.5rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-top: 1rem !important;
+    height: 2.67rem !important;
+    margin-right: 0.33rem !important;
+}
+
+.document-url-flex {
+    height: auto;
+    position: relative;
+    width: inherit;
+    margin-bottom: 1rem;
+    margin-left: 0rem !important;
+}
+
+.document-url-text-form {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 15rem;
+    white-space: nowrap;
+    color: #0000EE !important;
+}
+
+.document-url-label-wrapper {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    height: 2.67rem !important;
+    background-color:white !important;
+    width: 100%;
+    margin-right: 0.33rem !important;
+}
+
+.document-url-label-wrapper:hover{
+    cursor:pointer;
+    text-decoration:underline;
+}
+
+    .document-url-label-wrapper span {
+        font-size: 1.4rem !important;
+    }
+
+    .document-url-label-wrapper span {
+        font-size: 1.4rem !important;
+    }
+
+    .document-url-label-wrapper div.ui-box {
+        white-space: nowrap;
+        overflow: hidden !important;
+        text-overflow: ellipsis;
+    }

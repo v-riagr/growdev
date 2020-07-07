@@ -1,4 +1,8 @@
-﻿import { IPeoplePickerItemSelectedStyleProps, IPeoplePickerItemSelectedStyles } from 'office-ui-fabric-react';
+﻿// <copyright file="PeoplePickerStyles.ts" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import { IPeoplePickerItemSelectedStyleProps, IPeoplePickerItemSelectedStyles } from 'office-ui-fabric-react';
 import { DarkTheme } from './DarkCustomizations';
 
 export const PeoplePickerItemStyles = (

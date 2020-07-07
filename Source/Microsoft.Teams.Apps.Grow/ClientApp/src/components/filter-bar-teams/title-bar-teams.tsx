@@ -7,7 +7,7 @@ import * as microsoftTeams from "@microsoft/teams-js";
 import FilterBar from "../filter-bar/filter-bar";
 import CommandBar from "../filter-bar/command-bar";
 import { getTeamAuthors } from "../../api/discover-api";
-import { getConfigTags } from "../../api/teams-config-tab-api";
+import { getConfigSkills } from "../../api/teams-config-tab-api";
 import { ICheckBoxItem } from "../filter-bar/filter-bar";
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
 
@@ -16,10 +16,10 @@ interface IFilterBarProps {
     onSharedByCheckboxStateChange: (currentValues: Array<ICheckBoxItem>) => void
     onSearchInputChange: (searchString: string) => void;
     onSortByChange: (selectedValue: string) => void;
-    onNewPostSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
+    onNewProjectSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
     onFilterSearchChange: (searchText: string) => void;
-    onTagsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
-    searchFilterPostsUsingAPI: () => void;
+    onSkilsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
+    searchFilterProjectsUsingAPI: () => void;
     onFilterClear: (isFilterOpened: boolean) => void;
     commandBarSearchText: string;
     hideFilterbar: boolean;
@@ -31,7 +31,7 @@ interface IFilterBarProps {
 interface IFilterBarState {
     isOpen: boolean;
     sharedByAuthorList: Array<string>;
-    tagsList: Array<string>;
+    skillsList: Array<string>;
     showSolidFilter: boolean;
 }
 
@@ -44,7 +44,7 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
         this.state = {
             isOpen: false,
             sharedByAuthorList: [],
-            tagsList: [],
+            skillsList: [],
             showSolidFilter: false
         }
     }
@@ -71,13 +71,13 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
     }
 
 	/**
-    * Fetch list of tags from API
+    * Fetch list of skills from API
     */
     getTeamSkills = async () => {
-        let response = await getConfigTags(this.teamId);
+        let response = await getConfigSkills(this.teamId);
         if (response.status === 200 && response.data) {
             this.setState({
-                tagsList: response.data.skills.split(';')
+                skillsList: response.data.skills.split(';')
             });
         }
     }
@@ -110,15 +110,15 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
                     projectDetails={this.props.projectDetails}
                     showFilter={this.props.showFilter}
                     onFilterButtonClick={this.changeOpenState}
-                    onNewPostSubmit={this.props.onNewPostSubmit}
+                    onNewProjectSubmit={this.props.onNewProjectSubmit}
                     onSearchInputChange={this.props.onSearchInputChange}
                     showSolidFilterIcon={this.state.showSolidFilter}
-                    searchFilterPostsUsingAPI={this.props.searchFilterPostsUsingAPI}
+                    searchFilterProjectsUsingAPI={this.props.searchFilterProjectsUsingAPI}
                     commandBarSearchText={this.props.commandBarSearchText}
                 />
 
                 <FilterBar
-                    tagsList={this.state.tagsList}
+                    skillsList={this.state.skillsList}
                     onFilterSearchChange={this.props.onFilterSearchChange}
                     onSortByStateChange={this.props.onSortByChange}
                     sharedByAuthorList={this.state.sharedByAuthorList}
@@ -126,7 +126,7 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
                     onFilterBarCloseClick={this.changeOpenState}
                     onSharedByCheckboxStateChange={this.props.onSharedByCheckboxStateChange}
                     onTypeCheckboxStateChange={this.props.onTypeCheckboxStateChange}
-                    onTagsStateChange={this.props.onTagsStateChange} />
+                    onSkillsStateChange={this.props.onSkilsStateChange} />
             </>
         )
     }

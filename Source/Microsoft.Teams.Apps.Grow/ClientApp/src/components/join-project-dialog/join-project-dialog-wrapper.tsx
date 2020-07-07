@@ -1,9 +1,9 @@
-﻿// <copyright file="edit-project-dialog.tsx" company="Microsoft">
+﻿// <copyright file="edit-project-dialog-wrapper.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Dialog, Button, Text, AddIcon, Flex } from "@fluentui/react-northstar";
+import { Dialog, Text, ParticipantAddIcon, Flex } from "@fluentui/react-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";
 import JoinProjectContentDialog from "./join-project-dialog-content";
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
@@ -75,7 +75,7 @@ class JoinProjectDialog extends React.Component<IJoinProjectDialogProps, IJoinPr
                 onOpen={() => this.setState({ editDialogOpen: true })}
                 trigger={
                     <Flex vAlign="center" className={className} onClick={() => this.changeDialogOpenState(true)}>
-                        <AddIcon outline /> <Text className="popup-menu-item-text" content={this.localize("addToJoinedProjects")} />
+                        <ParticipantAddIcon outline /> <Text className="popup-menu-item-text" content={this.localize("addToJoinedProjects")} />
                     </Flex>
                 }
                 //onClick={(event: any) => this.props.onMenuItemClick(1)} 

@@ -5,12 +5,12 @@
 import * as React from 'react';
 import * as microsoftTeams from "@microsoft/teams-js";
 import { getBaseUrl } from '../configVariables';
-import { submitConfigTags, getConfigTags } from "../api/teams-config-tab-api";
-import { filterTags } from "../api/preferences-api";
+import { submitConfiguredSkills, getConfigSkills } from "../api/teams-config-tab-api";
+import { filterSkills } from "../api/teams-config-tab-api";
 import PreferencesSuggestion from "../components/configure-preference-dialog/preferences-suggestion-list";
 import Resources from '../constants/resources';
 import Tag from "../components/card-view/tag";
-import NoTagFound from "../components/configure-preference-dialog/no-tag-found"
+import NoSkillFound from "../components/configure-preference-dialog/no-tag-found"
 import { Flex, Text, Input, Loader } from "@fluentui/react-northstar";
 import { SearchIcon } from '@fluentui/react-icons-northstar';
 import { WithTranslation, withTranslation } from "react-i18next";
@@ -29,17 +29,17 @@ interface ITeamConfigDetails {
 }
 
 interface ITeamConfigState {
-    tagsList: Array<string>;
+    SkillsList: Array<string>;
     showSuggestion: boolean;
-    savedTagItems: Array<string>;
-    showTagError: boolean;
+    savedSkillItems: Array<string>;
+    showSkillError: boolean;
     searchText: string;
-    showNoTagFound: boolean;
+    showNoSkillFound: boolean;
     showEmptyStringError: boolean;
     disableSubmitButton: boolean;
     showLoader: boolean;
     showSuggestionLoader: boolean;
-    showNoTagsMessage: boolean;
+    showNoSkillsMessage: boolean;
     teamConfigDetails: ITeamConfigDetails;
 }
 
@@ -53,17 +53,17 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
         this.localize = this.props.t;
         this.teamId = "";
         this.state = {
-            tagsList: [],
-            savedTagItems: [],
+            SkillsList: [],
+            savedSkillItems: [],
             showSuggestion: false,
-            showTagError: false,
+            showSkillError: false,
             searchText: "",
-            showNoTagFound: false,
+            showNoSkillFound: false,
             showEmptyStringError: false,
             disableSubmitButton: false,
             showLoader: false,
             showSuggestionLoader: false,
-            showNoTagsMessage: false,
+            showNoSkillsMessage: false,
             teamConfigDetails: { ...this.props.teamConfigDetails }
         }
     }
@@ -76,17 +76,17 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
         microsoftTeams.getContext(async (context: microsoftTeams.Context) => {
             this.teamId = context.teamId!;
             setTimeout(async () => {
-                let response = await getConfigTags(this.teamId);
+                let response = await getConfigSkills(this.teamId);
                 if (response.status === 200 && response.data) {
                     if (response.data.skills === null) {
                         this.setState({
-                            tagsList: [],
-                            showNoTagsMessage: true
+                            SkillsList: [],
+                            showNoSkillsMessage: true
                         })
                     }
                     else {
                         this.setState({
-                            tagsList: response.data.skills.split(';')
+                            SkillsList: response.data.skills.split(';').filter((skill) => skill.trim() !== "")
                         })
                     }
                 }
@@ -99,10 +99,10 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
             })
 
             let configureDetails = this.state.teamConfigDetails;
-            configureDetails.skills = this.state.tagsList.join(';');
+            configureDetails.skills = this.state.SkillsList.join(';');
             configureDetails.teamId = this.teamId;
 
-            let response = await submitConfigTags(configureDetails);
+            let response = await submitConfiguredSkills(configureDetails);
             if (response.status === 200 && response.data) {
                 this.setState({
                     showLoader: false
@@ -130,11 +130,11 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     }
 
     /**
-    * Method to render error if particular tag is already added.
+    * Method to render error if particular skill is already added.
     */
-    showTagsAlreadyAddedError() {
-        if (this.state.showTagError) {
-            if (this.state.tagsList.length === Resources.tagsMaxCountPreferences)
+    showSkillsAlreadyAddedError() {
+        if (this.state.showSkillError) {
+            if (this.state.SkillsList.length === Resources.skillsMaxCountPreferences)
                 
             return (
                 <Flex gap="gap.smaller" className="tag-error-maxfive-config">
@@ -162,24 +162,24 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     }
 
     /**
-    * Remove selected tag for configuration in a team.
-    * @param index Index of the tag which need to be removed.
+    * Remove selected skill for configuration in a team.
+    * @param index Index of the skill which need to be removed.
     */
-    onTagRemoveClick = (index: number) => {
-        let skills = this.state.tagsList;
+    onSkillRemoveClick = (index: number) => {
+        let skills = this.state.SkillsList;
         skills.splice(index, 1);
-        if (this.state.tagsList.length) {
+        if (this.state.SkillsList.length) {
             this.setState({
                 disableSubmitButton: false,
-                tagsList: skills,
-                showTagError: false
+                SkillsList: skills,
+                showSkillError: false
             })
         }
         else {
             this.setState({
                 disableSubmitButton: true,
-                tagsList: skills,
-                showTagError: false
+                SkillsList: skills,
+                showSkillError: false
             })
         }
     }
@@ -188,23 +188,23 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     * Method add skills in to skilllist
     * @param value Skill to be added
     */
-    onTagAddClick = (value: string) => {
-        const taglist = this.state.tagsList.slice(0);
+    onSkillAddClick = (value: string) => {
+        const skillList = this.state.SkillsList.slice(0);
 
-        if (this.state.tagsList.indexOf(value) === -1 && this.state.tagsList.length < 5) {
+        if (this.state.SkillsList.indexOf(value) === -1 && this.state.SkillsList.length < 5) {
             this.setState({
-                showTagError: false
+                showSkillError: false
             })
-            taglist.push(value);
+            skillList.push(value.trim());
             this.setState({
-                tagsList: taglist,
+                SkillsList: skillList,
                 disableSubmitButton: false,
-                showNoTagsMessage: false
+                showNoSkillsMessage: false
             });
         }
         else {
             this.setState({
-                showTagError: true
+                showSkillError: true
             })
         }
     }
@@ -219,45 +219,45 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     }
 
     /**
-    * Clear all tags
+    * Clear all skills
     */
     closeSuggestionBox = () => {
         this.setState({
-            savedTagItems: [],
-            showNoTagFound: false
+            savedSkillItems: [],
+            showNoSkillFound: false
         })
     }
 
     /**
-    * Close no tag found box
+    * Close no skill found box.
     */
-    closeNoTagFoundBox = () => {
+    closeNoSkillFoundBox = () => {
         this.setState({
-            showNoTagFound: false
+            showNoSkillFound: false
         })
     }
 
     /**
     * Method render filtered skills in autosuggest dropdown.
     */
-    showSuggestedTags() {
-        if (this.state.savedTagItems.length && this.state.searchText.length) {
+    showSuggestedSkills() {
+        if (this.state.savedSkillItems.length && this.state.searchText.length) {
             return (
                 <PreferencesSuggestion
                     digestFrequency=""
                     node={this.nodeConfig}
-                    onTagAddClick={this.onTagAddClick}
-                    savedTagItems={this.state.savedTagItems}
+                    onTagAddClick={this.onSkillAddClick}
+                    savedTagItems={this.state.savedSkillItems}
                     showSuggestion={this.state.showSuggestion}
                     closeSuggestionBox={this.closeSuggestionBox} />
             )
         }
         else {
-            if (this.state.showNoTagFound) {
+            if (this.state.showNoSkillFound) {
                 return (
-                    <NoTagFound
+                    <NoSkillFound
                         node={this.nodeConfig}
-                        closeNoTagFoundBox={this.closeNoTagFoundBox} />
+                        closeNoSkillFoundBox={this.closeNoSkillFoundBox} />
                 )
             }
             else if (this.state.showSuggestionLoader) {
@@ -271,7 +271,7 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     /**
     * Method to fetch filtered skills based on search text.
     */
-    filterSavedTags = async (searchText: string) => {
+    filterSavedSkills = async (searchText: string) => {
         if (this.state.searchText.length === 0) {
             this.setState({
                 showEmptyStringError: true
@@ -281,22 +281,22 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
             this.setState({
                 showSuggestionLoader: true
             });
-            let response = await filterTags(searchText);
+            let response = await filterSkills(searchText);
             if (response.status === 200 && response.data) {
                 if (response.data.length) {
                     this.setState({
-                        savedTagItems: response.data
+                        savedSkillItems: response.data
                     })
                 }
                 else {
                     this.setState({
-                        showNoTagFound: true
+                        showNoSkillFound: true
                     })
                 }
             }
             else {
                 this.setState({
-                    showNoTagFound: true
+                    showNoSkillFound: true
                 })
             }
         }
@@ -315,12 +315,12 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
         })
         if (searchText.length === 0) {
             this.setState({
-                savedTagItems: [],
-                showNoTagFound: false,
+                savedSkillItems: [],
+                showNoSkillFound: false,
             });
         }
         this.setState({
-            showTagError: false,
+            showSkillError: false,
             showEmptyStringError: false
         })
     }
@@ -341,22 +341,22 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
                 this.setState({
                     showSuggestionLoader: true
                 });
-                let response = await filterTags(this.state.searchText);
+                let response = await filterSkills(this.state.searchText);
                 if (response.status === 200 && response.data) {
                     if (response.data.length) {
                         this.setState({
-                            savedTagItems: response.data
+                            savedSkillItems: response.data
                         })
                     }
                     else {
                         this.setState({
-                            showNoTagFound: true
+                            showNoSkillFound: true
                         })
                     }
                 }
                 else {
                     this.setState({
-                        showNoTagFound: true
+                        showNoSkillFound: true
                     })
                 }
             }
@@ -367,10 +367,10 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
     }
 
     /**
-    * Method to show tag list after selecting them from dropdown
+    * Method to show skill list after selecting them from dropdown.
     */
-    showTags() {
-        if (this.state.showNoTagsMessage) {
+    showSkills() {
+        if (this.state.showNoSkillsMessage) {
             return (
                 <Text content={this.localize("noTagConfiguredNote")} />
             )
@@ -379,8 +379,8 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
             return (
                 <div>
                     {
-                        this.state.tagsList.map((value: string, index: number) => {
-                            return <Tag index={index} tagContent={value.trim()} showRemoveIcon={true} onRemoveClick={this.onTagRemoveClick} />
+                        this.state.SkillsList.map((value: string, index: number) => {
+                            return <Tag index={index} tagContent={value.trim()} showRemoveIcon={true} onRemoveClick={this.onSkillRemoveClick} />
                         })
                     }
                 </div>
@@ -397,21 +397,22 @@ class TeamsConfigPage extends React.Component<ITeamConfigDetailsProps, ITeamConf
                 <div className="config-container" ref={nodeConfig => this.nodeConfig = nodeConfig}>
                     <Flex gap="gap.smaller" className="tag-searchbox-label">
                         <Text content={this.localize("tagsLabel")} />
-                        {this.showTagsAlreadyAddedError()}
+                        <Flex.Item push>
+                            {this.showSkillsAlreadyAddedError()}
+                        </Flex.Item>
                     </Flex>
-                    <div className="search-div">
-                        <Flex gap="gap.smaller" className="input-search-config">
-                            <Flex.Item push>
-                                <Input onKeyDown={(event: any) => this.onEnterKeyPress(event)} icon={<SearchIcon onClick={(event: any) => this.filterSavedTags(this.state.searchText)} key="search" className="search-icon" />} fluid onChange={(event: any) => this.getInputValue(event.target.value)} placeholder={this.localize("searchPlaceholder")} />
-                            </Flex.Item>
-                        </Flex>
-                        {this.showSuggestedTags()}
-                    </div>
+                    <Flex className="search-div">
+                        <Input onKeyDown={(event: any) => this.onEnterKeyPress(event)} icon={<SearchIcon onClick={(event: any) => this.filterSavedSkills(this.state.searchText)} key="search" className="search-icon" />} fluid onChange={(event: any) => this.getInputValue(event.target.value)} placeholder={this.localize("searchPlaceholder")} />
+                    </Flex>
+                    <Flex>
+                        {this.showSuggestedSkills()}
+                    </Flex>
 
                     <Flex gap="gap.smaller" className="tags-flex-preferences" vAlign="center">
-                        {this.showTags()}
+                        {this.showSkills()}
                     </Flex>
                 </div>
+
             </div>
         );
     }

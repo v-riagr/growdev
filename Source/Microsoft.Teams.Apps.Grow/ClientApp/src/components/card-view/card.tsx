@@ -10,14 +10,13 @@ import { IProjectDetails } from "./discover-wrapper-page";
 import TypeLabel from "./type-label";
 import Thumbnail from "./thumbnail";
 import Upvotes from "./upvotes";
-import Resources from "../../constants/resources";
 import EditItemDialog from "../edit-project-dialog/edit-project-dialog";
 import JoinProjectDialogTitle from "../join-project-dialog/join-project-dialog-wrapper-title";
 import { getInitials } from "../../helpers/helper";
-import { deletePost, addUserVote, deleteUserVote } from "../../api/discover-api";
+import { deleteProject } from "../../api/discover-api";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import { addNewPostContent, leaveProject, getUserPrivateListPosts } from "../../api/private-list-api";
+import { leaveProject, getUserAcquiredSkills } from "../../api/acquired-skills-api";
 
 import "../../styles/projects-cards.css";
 
@@ -29,10 +28,8 @@ interface ICardProps extends WithTranslation {
     onDeleteButtonClick: (projectId: string, isSuccess: boolean) => void;
     onCloseProjectButtonClick: (isSuccess: boolean, projectId: string) => void;
     onLeaveButtonClick: (projectId: string, isSuccess: boolean) => void;
-    onAddPrivatePostClick: (isSuccess: boolean, message?: string) => void;
     onJoinMenuItemClick: (projectId: string, isSuccess: boolean) => void;
     onCardUpdate: (cardDetails: IProjectDetails, isSuccess: boolean) => void;
-    onVoteClick: (isSuccess: boolean, isLiked: boolean) => void;
     loggedInUserId: string;
     showLeaveProjects: boolean;
 }
@@ -63,45 +60,11 @@ class Card extends React.Component<ICardProps, ICardState> {
     }
 
 	/**
-    *Submits user vote information to API.
-    */
-    onVoteClick = async () => {
-        let cardDetails = { ...this.state.cardDetails };
-        this.setState({ isVoteLoading: true });
-        if (!cardDetails.isJoinedByUser) {
-            let response = await addUserVote({ postId: cardDetails.projectId });
-            if (response.status === 200 && response.data) {
-                cardDetails.isJoinedByUser = true;
-                cardDetails.teamSize = cardDetails.teamSize + 1;
-                this.setState({ cardDetails: cardDetails });
-                this.props.onVoteClick(true, true);
-            }
-            else {
-                this.props.onVoteClick(false, true);
-            }
-        }
-        else {
-            let response = await deleteUserVote({ postId: cardDetails.projectId });
-            if (response.status === 200 || response.data) {
-                cardDetails.isJoinedByUser = false;
-                cardDetails.teamSize = cardDetails.teamSize - 1;
-                this.setState({ cardDetails: cardDetails });
-                this.props.onVoteClick(true, false);
-            }
-            else {
-                this.props.onVoteClick(false, false);
-            }
-        }
-
-        this.setState({ isVoteLoading: false });
-    }
-
-	/**
     *Deletes selected blog post from storage
     */
     handleDeleteButtonClick = async () => {
         this.setState({ isMoreMenuLoading: true });
-        let response = await deletePost(this.state.cardDetails);
+        let response = await deleteProject(this.state.cardDetails);
         if (response.status === 200 && response.data) {
             this.setState({ isMoreMenuLoading: false });
             this.props.onDeleteButtonClick(this.state.cardDetails.projectId, true);
@@ -138,42 +101,13 @@ class Card extends React.Component<ICardProps, ICardState> {
     }
 
 	/**
-    * Fetch user's private list posts from API
+    * Fetch list of user's acquired skills from API.
     */
-    getPrivateListPosts = async () => {
-        let response = await getUserPrivateListPosts();
+    getUserAcquiredSkills = async () => {
+        let response = await getUserAcquiredSkills();
         if (response.status === 200 && response.data) {
             return response.data;
         }
-    }
-
-    handleAddToPrivateListButtonClick = async () => {
-        this.setState({
-            isMoreMenuLoading: true
-        });
-
-        let privateListPosts = await this.getPrivateListPosts();
-        let blogPost = this.state.cardDetails;
-
-        if (privateListPosts && privateListPosts.find((post: any) => { return post.postId === blogPost.projectId })) {
-            this.props.onAddPrivatePostClick(false, this.localize("privatePostExistError"));
-        }
-        else if (privateListPosts && privateListPosts.length >= Resources.maxPrivateListPostCount) {
-            this.props.onAddPrivatePostClick(false, this.localize("privatePostMaxCountError"));
-        }
-        else {
-            let postContent = { postId: blogPost.projectId };
-            let response = await addNewPostContent(postContent);
-
-            if (response.status === 200 && response.data) {
-                this.props.onAddPrivatePostClick(true);
-            }
-            else {
-                this.props.onAddPrivatePostClick(false);
-            }
-        }
-
-        this.setState({ isMoreMenuLoading: false });
     }
 
 	/**
@@ -181,10 +115,7 @@ class Card extends React.Component<ICardProps, ICardState> {
 	*@param key Selected menu key
 	*/
     onMenuItemClick = (key: number) => {
-        if (key === 1) // add to user private list
-        {
-            this.handleAddToPrivateListButtonClick();
-        }
+
         if (key === 3) // delete
         {
             this.handleDeleteButtonClick();
@@ -212,10 +143,10 @@ class Card extends React.Component<ICardProps, ICardState> {
     * Renders the component
     */
     public render(): JSX.Element {
-        let commaSeperatedTags = "";
+        let commaSeperatedSkills = "";
         if (this.state.cardDetails.requiredSkills.split(";").length > 3) {
-            let tags = this.state.cardDetails.requiredSkills.split(";");
-            commaSeperatedTags = tags.slice(3, this.state.cardDetails.requiredSkills.split(";").length).join(',');
+            let skills = this.state.cardDetails.requiredSkills.split(";");
+            commaSeperatedSkills = skills.slice(3, this.state.cardDetails.requiredSkills.split(";").length).join(',');
         }
         return (
             <div id={this.props.index.toString()} className="card-bg">
@@ -225,7 +156,7 @@ class Card extends React.Component<ICardProps, ICardState> {
                 <div className="card-body">
                     <Flex gap="gap.smaller" column vAlign="start">
                         <Flex gap="gap.smaller" className="title-flex">
-                            {this.props.cardDetails.isCurrentUserProject && this.props.cardDetails.status != 4 &&
+                            {this.props.cardDetails.isCurrentUserProject && this.props.cardDetails.status !== 4 &&
                                 <>
                                 <Flex.Item grow>
                                     <EditItemDialog
@@ -250,7 +181,7 @@ class Card extends React.Component<ICardProps, ICardState> {
                                 />
                                 </>
                             }
-                            {this.props.cardDetails.isCurrentUserProject && this.props.cardDetails.status == 4 &&
+                            {this.props.cardDetails.isCurrentUserProject && this.props.cardDetails.status === 4 &&
                                 <JoinProjectDialogTitle
                                     index={this.props.index}
                                     cardDetails={this.props.cardDetails}
@@ -298,7 +229,7 @@ class Card extends React.Component<ICardProps, ICardState> {
                                     })}
                                     <Label
                                         content={"+" + (this.state.cardDetails.requiredSkills.split(";").length - 3)}
-                                        title={commaSeperatedTags}
+                                        title={commaSeperatedSkills}
                                         circular
                                         className="tags-label-wrapper" />
                                 </>
@@ -316,7 +247,6 @@ class Card extends React.Component<ICardProps, ICardState> {
                         {
                             this.state.isVoteLoading === false ?
                                 <Upvotes
-                                    onVoteClick={() => this.onVoteClick()}
                                     isSelected={this.state.cardDetails.isJoinedByUser === undefined ? false : this.state.cardDetails.isJoinedByUser}
                                     totalJoined={this.state.cardDetails.projectParticipantsUserIds === "" ? "0" : this.state.cardDetails.projectParticipantsUserIds.split(';').length.toString()}
                                     teamSize={this.state.cardDetails.teamSize.toString()} />

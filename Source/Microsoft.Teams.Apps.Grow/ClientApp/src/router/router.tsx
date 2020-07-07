@@ -12,7 +12,7 @@ import SignInPage from "../components/signin/signin";
 import SignInSimpleStart from "../components/signin/signin-start";
 import SignInSimpleEnd from "../components/signin/signin-end";
 import ProjectClosure from "../components/close-project/close-project-wrapper";
-import CloseProjectDialog from "../components/close-project/CloseProjectDialog";
+import CloseProjectDialog from "../components/close-project/close-project-dialog";
 import SkillsAquiredTab from "../components/skills-aquired-tab/skills-aquired-wrapper";
 import NewProjectDialog from "../components/new-project-dialog/new-project-dialog";
 import EditProjectDialog from "../components/edit-project-dialog/edit-project-dialog";

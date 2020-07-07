@@ -12,9 +12,12 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
     using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
+    using Microsoft.Teams.Apps.Grow.Models.Configuration;
 
     /// <summary>
     /// Controller to handle project API operations.
@@ -58,14 +61,20 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         /// <param name="acquiredSkillStorageProvider">Provides methods for acquired skills operations from database.</param>
         /// <param name="projectSearchService">Project search service for fetching project with search criteria and filters.</param>
         /// <param name="notificationHelper">Provides methods to send notifications to users.</param>
+        /// <param name="tokenAcquisitionHelper">Provides </param>
+        /// <param name="azureAdOptions">Instance of IOptions to read data from application configuration.</param>
+        /// <param name="confidentialClientApp">Instance of ConfidentialClientApplication class.</param>
         public ProjectWorkflowController(
-            ILogger<ProjectController> logger,
+            ILogger<ProjectWorkflowController> logger,
             TelemetryClient telemetryClient,
             IProjectStorageProvider projectStorageProvider,
             IAcquiredSkillStorageProvider acquiredSkillStorageProvider,
             IProjectSearchService projectSearchService,
-            NotificationHelper notificationHelper)
-            : base(telemetryClient)
+            NotificationHelper notificationHelper,
+            IOptions<AzureActiveDirectorySettings> azureAdOptions,
+            TokenAcquisitionHelper tokenAcquisitionHelper,
+            IConfidentialClientApplication confidentialClientApp)
+            : base(telemetryClient, azureAdOptions, tokenAcquisitionHelper, confidentialClientApp, logger)
         {
             this.logger = logger;
             this.projectStorageProvider = projectStorageProvider;
@@ -75,64 +84,32 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         }
 
         /// <summary>
-        /// Valid post types.
+        /// This method is used to perform join project operation.
         /// </summary>
-        public enum StatusEnum
-        {
-            /// <summary>
-            /// No status.
-            /// </summary>
-            None = 0,
-
-            /// <summary>
-            /// Project not yet started.
-            /// </summary>
-            NotStarted = 1,
-
-            /// <summary>
-            /// Project is active.
-            /// </summary>
-            Active = 2,
-
-            /// <summary>
-            /// Project is blocked.
-            /// </summary>
-            Blocked = 3,
-
-            /// <summary>
-            /// Project is closed.
-            /// </summary>
-            Closed = 4,
-        }
-
-        /// <summary>
-        /// Post call to join a project.
-        /// </summary>
-        /// <param name="projectEntity">Represents project entity.</param>
-        /// <returns>Returns true for successful operation.</returns>
+        /// <param name="projectId">Id of the project to be deleted.</param>
+        /// <param name="createdByUserId">Azure Active Directory id of project owner.</param>
         [HttpPost("join-project")]
-        public async Task<IActionResult> JoinProjectAsync([FromBody] ProjectEntity projectEntity)
+        public async Task<IActionResult> JoinProjectAsync(string projectId, string createdByUserId)
         {
             this.logger.LogInformation("call to add project in user's joined project list.");
 
             try
             {
-                if (string.IsNullOrEmpty(projectEntity?.ProjectId))
+                if (string.IsNullOrEmpty(projectId))
                 {
                     this.logger.LogError("ProjectId is found null or empty while joining the project.");
                     return this.BadRequest("ProjectId cannot be null or empty.");
                 }
 
-                var projectDetails = await this.projectStorageProvider.GetProjectAsync(projectEntity.CreatedByUserId, projectEntity.ProjectId);
+                var projectDetails = await this.projectStorageProvider.GetProjectAsync(createdByUserId, projectId);
 
                 // Allow user to join project which has status 'Active' and 'Not started'.
-                if (projectDetails != null && !projectDetails.IsRemoved && (projectDetails.Status == (int)StatusEnum.NotStarted || projectDetails.Status == (int)StatusEnum.Active))
+                if (projectDetails != null && !projectDetails.IsRemoved && (projectDetails.Status == (int)ProjectStatus.NotStarted || projectDetails.Status == (int)ProjectStatus.Active))
                 {
                     // If there no existing participants
                     if (string.IsNullOrEmpty(projectDetails.ProjectParticipantsUserIds))
                     {
                         projectDetails.ProjectParticipantsUserIds = this.UserAadId;
-                        projectDetails.ProjectParticipantsUserMapping = $"{this.UserAadId}:{this.UserName}";
                     }
                     else
                     {
@@ -153,23 +130,23 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                         }
 
                         projectDetails.ProjectParticipantsUserIds += $";{this.UserAadId}";
-                        projectDetails.ProjectParticipantsUserMapping += $";{this.UserAadId}:{this.UserName}";
                     }
 
-                    // Update the project status.
-                    var isUpdated = await this.projectStorageProvider.UpsertProjectAsync(projectDetails);
+                    // Update the joined participant details for a project.
+                    // The UpdatedDate field is intentionally not updated here, as members joining/leaving a project is not considered to be an update to the project itself.
+                    var isUpdated = await this.projectStorageProvider.UpdateProjectAsync(projectDetails);
 
                     if (isUpdated)
                     {
                         this.RecordEvent("User joined project successfully.");
                         await this.projectSearchService.RunIndexerOnDemandAsync();
-                        this.logger.LogInformation($"User {this.UserAadId} joined project {projectEntity.ProjectId} successfully.");
+                        this.logger.LogInformation($"User {this.UserAadId} joined project {projectId} successfully.");
 
                         try
                         {
                             // Send Notification to owner when any user joins project.
                             await this.notificationHelper.SendProjectJoinedNotificationAsync(
-                                projectEntity,
+                                projectDetails,
                                 this.UserName,
                                 this.UserPrincipalName);
 
@@ -179,49 +156,64 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                         catch (Exception ex)
 #pragma warning restore CA1031 // Catching general exception occurred while sending notification to user to log error and continue to execute code
                         {
-                            this.logger.LogError(ex, $"Error while sending notification to project owner for joined user {this.UserAadId} and project {projectEntity.ProjectId}.");
+                            this.logger.LogError(ex, $"Error while sending notification to project owner for joined user {this.UserAadId} and project {projectId}.");
                         }
 
                         return this.Ok(isUpdated);
                     }
                     else
                     {
-                        this.logger.LogInformation($"Error while updating the project: {projectEntity.ProjectId} for new joining.");
+                        this.logger.LogError($"Error while joining the project: {projectId} by user: {this.UserAadId}.");
                         return this.Ok(false);
                     }
                 }
 
-                this.logger.LogError($"Cannot find project {projectEntity?.ProjectId} to join.");
+                this.RecordEvent($"Cannot find project {projectId} to join.");
+                this.logger.LogError($"Cannot find project {projectId} to join.");
+
                 return this.NotFound($"Cannot find project to join.");
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "Error while joining a project by user.");
+                this.RecordEvent($"Error while joining a project by user {this.UserAadId}.");
+                this.logger.LogError(ex, $"Error while joining a project by user {this.UserAadId}.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Post call to close a project.
+        /// This method is used to perform close project operation.
         /// </summary>
         /// <param name="closeProjectModel">Represents a close project model.</param>
         /// <returns>Returns true for successful operation.</returns>
         [HttpPost("close-project")]
-        public async Task<IActionResult> CloseProjectAsync([FromBody] CloseProjectModel closeProjectModel)
+        public async Task<IActionResult> CloseProjectAsync(CloseProjectModel closeProjectModel)
         {
             this.logger.LogInformation("call to close a project.");
 
             try
             {
+                if (closeProjectModel == null)
+                {
+                    this.logger.LogError("Close project details is null or empty.");
+                    return this.BadRequest("Close project details is null or empty.");
+                }
+
+                if (string.IsNullOrEmpty(closeProjectModel.ProjectId))
+                {
+                    this.logger.LogError("ProjectId is found null or empty while closing the project.");
+                    return this.BadRequest("ProjectId cannot be null or empty.");
+                }
+
                 var projectDetails = await this.projectStorageProvider.GetProjectAsync(this.UserAadId, closeProjectModel.ProjectId);
 
                 // Only projects with 'Active' status are allowed to close.
-                if (projectDetails == null && projectDetails.IsRemoved && projectDetails.Status == (int)StatusEnum.Active)
+                if (projectDetails == null || projectDetails.IsRemoved || projectDetails.Status != (int)ProjectStatus.Active)
                 {
                     this.logger.LogError($"Project {closeProjectModel.ProjectId} does not exists.");
                     this.RecordEvent("Close project - HTTP Post call failed");
 
-                    return this.NotFound($"Project does not exists.");
+                    return this.NotFound($"Project does not exists or only projects with 'Active' status are allowed to close.");
                 }
 
                 // Check if any participants has joined project
@@ -229,40 +221,37 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 {
                     // Get participants
                     var projectMembers = projectDetails.ProjectParticipantsUserIds.Split(';');
-
-                    // Get participant names
-                    var projectMemberNames = projectDetails.ProjectParticipantsUserMapping.Split(';');
+                    List<ProjectParticipantModel> projectParticipants = new List<ProjectParticipantModel>();
 
                     // If client app fails to send participants list with acquired skills return bad request error.
                     if (closeProjectModel.ProjectParticipantDetails == null)
                     {
-                        this.logger.LogInformation($"Project participants for project {projectDetails.ProjectId} does not match while changing status to closed.");
-                        return this.BadRequest(new { message = "Project participants does not match." });
+                        this.logger.LogInformation($"Project participants for project {projectDetails.ProjectId} does not exists while changing status to closed.");
+                        return this.BadRequest("Project participants does not exists.");
                     }
 
-                    // Verify if participants sent by client app matches with participants in storage.
-                    var verifyMembers = closeProjectModel.ProjectParticipantDetails.Select(participants => participants.UserId).Intersect(projectMembers).Count() == projectMembers.Length;
-
-                    if (!verifyMembers)
-                    {
-                        this.logger.LogInformation($"Project participants for project {projectDetails.ProjectId} does not match while changing status to closed.");
-                        return this.BadRequest(new { message = "Project participants does not match." });
-                    }
-
-                    // Save user acquired skills for a project in storage for all user's who joined this project.
                     foreach (var participant in closeProjectModel.ProjectParticipantDetails)
                     {
-                        var user = projectMemberNames.Where(member => member.Split(':')[0] == participant.UserId).First();
+                        if (closeProjectModel.ProjectParticipantDetails.Any(projectParticipant => projectMembers.Contains(projectParticipant.UserId)))
+                        {
+                            projectParticipants.Add(participant);
+                        }
+                    }
+
+                    var projectOwnerDetail = await this.GetUserDetailAsync(projectDetails.CreatedByUserId);
+
+                    // Save user acquired skills for a project in storage for all user's who joined this project.
+                    foreach (var participant in projectParticipants)
+                    {
                         var acquiredSkillEntity = new AcquiredSkillsEntity()
                         {
                             ProjectId = projectDetails.ProjectId,
                             UserId = participant.UserId,
                             AcquiredSkills = participant.AcquiredSkills,
-                            CreatedByName = user.Split(':')[1],
                             CreatedDate = DateTime.UtcNow,
                             Feedback = participant.Feedback,
                             ProjectClosedDate = DateTime.UtcNow,
-                            ProjectOwnerName = projectDetails.CreatedByName,
+                            ProjectOwnerName = projectOwnerDetail.DisplayName,
                             ProjectTitle = projectDetails.Title,
                         };
 
@@ -281,10 +270,12 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 }
 
                 projectDetails.ProjectClosedDate = DateTime.UtcNow;
-                projectDetails.Status = (int)StatusEnum.Closed;
+                projectDetails.Status = (int)ProjectStatus.Closed;
 
-                // Update the project status as closed.
-                var isProjectClosed = await this.projectStorageProvider.UpsertProjectAsync(projectDetails);
+                // The current implementation leverages Azure table storage to map use skills and after successful execution marks the project status as closed.
+                // Azure table storage do not support transactions and in case of failure while updating the skills, the user can re-trigger close operation and already added skills of user will be updated.
+                // In case of partial failure in updating the skills and if project status is not updated as closed, still Participants whose skills are updated successfully, will be able to see the acquired skills in tab.
+                var isProjectClosed = await this.projectStorageProvider.UpdateProjectAsync(projectDetails);
 
                 if (isProjectClosed)
                 {
@@ -293,7 +284,10 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                     this.logger.LogInformation($"Project {projectDetails.ProjectId} closed successfully.");
 
                     // Send notification to users on project closure.
-                    await this.notificationHelper.SendProjectClosureNotificationAsync(closeProjectModel);
+                    await this.notificationHelper.SendProjectClosureNotificationAsync(
+                        closeProjectModel,
+                        projectDetails.Title,
+                        projectDetails.CreatedByName);
 
                     return this.Ok(isProjectClosed);
                 }
@@ -306,26 +300,27 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "Error while closing project.");
+                this.RecordEvent($"Error while closing project by user {this.UserAadId}.");
+                this.logger.LogError(ex, $"Error while closing project by user {this.UserAadId}.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Call to leave a particular project joined by user.
+        /// This method is used to perform leave project operation.
         /// </summary>
         /// <param name="projectId">Id of the project to be deleted.</param>
         /// <param name="createdByUserId">Azure Active Directory id of project owner.</param>
         /// <returns>Returns true for successful operation.</returns>
-        [HttpDelete("leave-project")]
+        [HttpPost("leave-project")]
         public async Task<IActionResult> LeaveProjectAsync(string projectId, string createdByUserId)
         {
             this.logger.LogInformation("Call to leave a project already joined by participant.");
 
             if (string.IsNullOrEmpty(projectId))
             {
-                this.logger.LogError("Argument projectId is either null or empty.");
-                return this.BadRequest("Argument projectId is either null or empty.");
+                this.logger.LogError("ProjectId cannot be null or empty.");
+                return this.BadRequest("ProjectId cannot be null or empty.");
             }
 
             if (string.IsNullOrEmpty(createdByUserId))
@@ -338,16 +333,16 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             {
                 var projectEntity = await this.projectStorageProvider.GetProjectAsync(createdByUserId, projectId);
 
-                if (projectEntity == null && projectEntity.IsRemoved)
+                if (projectEntity == null || projectEntity.IsRemoved)
                 {
                     this.logger.LogInformation($"Project {projectId} not found for user {createdByUserId}.");
-                    return this.BadRequest($"Project not found.");
+                    return this.BadRequest($"Project with {projectId} does not exists");
                 }
 
                 if (string.IsNullOrEmpty(projectEntity.ProjectParticipantsUserIds))
                 {
                     this.logger.LogInformation($"Leave project operation failed for user {createdByUserId} and project {projectId}.");
-                    return this.NotFound(new { message = "Project not found" });
+                    return this.NotFound($"Leave project operation failed for user {createdByUserId} and project {projectId}.");
                 }
 
                 // Remove user from joined project list.
@@ -361,20 +356,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                     }
                 }
 
-                // Remove user mapping from joined project list.
-                var updatedUserMappings = new List<string>();
-
-                foreach (var userMapping in projectEntity.ProjectParticipantsUserMapping.Split(";"))
-                {
-                    if (userMapping.Split(':')[0] != this.UserAadId)
-                    {
-                        updatedUserMappings.Add(userMapping);
-                    }
-                }
-
                 // Update project participants list, if leave a project.
                 projectEntity.ProjectParticipantsUserIds = string.Join(";", updatedUserIds);
-                projectEntity.ProjectParticipantsUserMapping = string.Join(";", updatedUserMappings);
 
                 var leaveResult = await this.projectStorageProvider.UpsertProjectAsync(projectEntity);
 
@@ -392,7 +375,38 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while leaving a project {projectId} by user {this.UserAadId}.");
                 this.logger.LogError(ex, $"Error while leaving a project {projectId} by user {this.UserAadId}.");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get user information from graph API from user object id.
+        /// </summary>
+        /// <param name="userObjectIds">User object ids whose information to be fetched separated by ';'.</param>
+        /// <returns>Returns true for successful operation.</returns>
+        [HttpGet("user-info")]
+        public async Task<IActionResult> GetUserInfoAsync(string userObjectIds)
+        {
+            this.logger.LogInformation("Call to get user information by user object ids.");
+
+            if (userObjectIds == null || !userObjectIds.Any())
+            {
+                this.logger.LogError($"Argument {nameof(userObjectIds)} is either null or empty.");
+                return this.BadRequest($"Argument {nameof(userObjectIds)} is either null or empty.");
+            }
+
+            try
+            {
+                userObjectIds = userObjectIds.Trim(';');
+                var userDetails = await this.GetUserDetailsAsync(userObjectIds);
+                this.logger.LogInformation("Call to get user information by user object ids is succeeded.");
+                return this.Ok(userDetails);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"Error while retrieving user information.");
                 throw;
             }
         }

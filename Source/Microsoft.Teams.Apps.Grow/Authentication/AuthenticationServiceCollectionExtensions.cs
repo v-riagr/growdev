@@ -7,6 +7,7 @@ namespace Microsoft.Teams.Apps.Grow.Authentication
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.AspNetCore.Authentication.AzureAD.UI;
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ namespace Microsoft.Teams.Apps.Grow.Authentication
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.IdentityModel.Tokens;
     using Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy;
+    using Microsoft.Teams.Apps.Grow.Helpers;
 
     /// <summary>
     /// Extension class for registering authentication services in Dependency Injection container.
@@ -24,6 +26,7 @@ namespace Microsoft.Teams.Apps.Grow.Authentication
         private const string TenantIdConfigurationSettingsKey = "AzureAd:TenantId";
         private const string ApplicationIdURIConfigurationSettingsKey = "AzureAd:ApplicationIdURI";
         private const string ValidIssuersConfigurationSettingsKey = "AzureAd:ValidIssuers";
+        private const string GraphScopeConfigurationSettingsKey = "AzureAd:GraphScope";
 
         /// <summary>
         /// Extension method to register the authentication services.
@@ -37,19 +40,7 @@ namespace Microsoft.Teams.Apps.Grow.Authentication
             // This works specifically for single tenant application.
             AuthenticationServiceCollectionExtensions.ValidateAuthenticationConfigurationSettings(configuration);
 
-            services.AddAuthentication(options => { options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; })
-                .AddJwtBearer(options =>
-                {
-                    var azureADOptions = new AzureADOptions();
-                    configuration.Bind("AzureAd", azureADOptions);
-                    options.Authority = $"{azureADOptions.Instance}{azureADOptions.TenantId}/v2.0";
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidAudiences = AuthenticationServiceCollectionExtensions.GetValidAudiences(configuration),
-                        ValidIssuers = AuthenticationServiceCollectionExtensions.GetValidIssuers(configuration),
-                        AudienceValidator = AuthenticationServiceCollectionExtensions.AudienceValidator,
-                    };
-                });
+            RegisterAuthenticationServices(services, configuration);
 
             RegisterAuthorizationPolicy(services);
         }
@@ -65,6 +56,40 @@ namespace Microsoft.Teams.Apps.Grow.Authentication
             });
 
             services.AddSingleton<IAuthorizationHandler, MustBeTeamMemberUserPolicyHandler>();
+        }
+
+        // This method works specifically for single tenant application.
+        private static void RegisterAuthenticationServices(
+            IServiceCollection services,
+            IConfiguration configuration)
+        {
+            ValidateAuthenticationConfigurationSettings(configuration);
+
+            services.AddAuthentication(options => { options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; })
+                .AddJwtBearer(options =>
+                {
+                    var azureADOptions = new AzureADOptions();
+                    configuration.Bind("AzureAd", azureADOptions);
+                    options.Authority = $"{azureADOptions.Instance}{azureADOptions.TenantId}/v2.0";
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidAudiences = GetValidAudiences(configuration),
+                        ValidIssuers = GetValidIssuers(configuration),
+                        AudienceValidator = AudienceValidator,
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async context =>
+                        {
+                            var tokenAcquisition = context.HttpContext.RequestServices.GetRequiredService<TokenAcquisitionHelper>();
+                            context.Success();
+
+                            // Adds the token to the cache, and also handles the incremental consent and claim challenges
+                            await tokenAcquisition.AddTokenToCacheFromJwtAsync(configuration[AuthenticationServiceCollectionExtensions.GraphScopeConfigurationSettingsKey], context.Request.Headers["Authorization"].ToString().Replace("Bearer", string.Empty, StringComparison.InvariantCulture));
+                            await Task.FromResult(0);
+                        },
+                    };
+                });
         }
 
         /// <summary>

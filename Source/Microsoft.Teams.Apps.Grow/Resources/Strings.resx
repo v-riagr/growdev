@@ -159,7 +159,7 @@
     <comment>Closed project status</comment>
   </data>
   <data name="CongratulationsMessage" xml:space="preserve">
-    <value>Congratulations!</value>
+    <value>Project team update</value>
     <comment>Congratulations message for project closure card.</comment>
   </data>
   <data name="ConnectWithUserMessage" xml:space="preserve">
@@ -249,6 +249,10 @@
     <value>Sorry!</value>
     <comment>Apology message for project deletion card.</comment>
   </data>
+  <data name="StatusLabel" xml:space="preserve">
+    <value>Status</value>
+    <comment>Status label to be displayed on adpative card</comment>
+  </data>
   <data name="TabName" xml:space="preserve">
     <value>All projects</value>
     <comment>All projects tab name</comment>
@@ -278,6 +282,7 @@
   </data>
   <data name="WelcomeCardGetStartedText" xml:space="preserve">
     <value>Let's get started!</value>
+    <comment>Text to show on welcome card.</comment>
   </data>
   <data name="WelcomeCardTeamDigestContent" xml:space="preserve">
     <value>Get a **digest of content** that are added based on your preference in a channel to stay updated on the topics.</value>

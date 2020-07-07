@@ -15,7 +15,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Providers
     using Microsoft.WindowsAzure.Storage.Table;
 
     /// <summary>
-    /// Implements storage provider which stores user data in storage.
+    /// Implements provider which stores user data in Azure table storage.
     /// </summary>
     public class UserDetailProvider : BaseStorageProvider, IUserDetailProvider
     {

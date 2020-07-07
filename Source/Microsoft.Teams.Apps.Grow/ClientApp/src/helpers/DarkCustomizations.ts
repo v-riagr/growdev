@@ -1,4 +1,8 @@
-﻿import {
+﻿// <copyright file="DarkCustomizations.ts" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import {
     createTheme,
     ICustomizations,
     IPalette,

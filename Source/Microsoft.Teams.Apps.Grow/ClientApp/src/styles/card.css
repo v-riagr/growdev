@@ -172,6 +172,14 @@
     color: #ffffff !important;
 }
 
+.teamsize-label-wrapper {
+}
+
+.dark-container .teamsize-label-wrapper {
+    background-color: #484644 !important;
+    color: #ffffff !important;
+}
+
 .scroll-view {
     margin-top: 1rem;
     height: 90vh;

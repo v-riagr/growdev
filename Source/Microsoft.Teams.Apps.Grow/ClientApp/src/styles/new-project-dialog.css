@@ -69,6 +69,28 @@
     width: 100%;
 }
 
+.tags-label-wrapper {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-top: 1rem !important;
+    height: 2.67rem !important;
+    margin-right: 0.33rem !important;
+}
+
+.tags-label-wrapper-dark {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-top: 1rem !important;
+    height: 2.67rem !important;
+    margin-right: 0.33rem !important;
+    background-color: #484644 !important;
+    color: #ffffff !important;
+}
+
 .info-icon {
     padding-top: 0.3rem;
     color: #6264A7;
@@ -78,6 +100,10 @@
 .team-size-error span:first-child {
     margin-right: 0rem !important;
     width: 7.2rem !important;
+}
+
+.form-label {
+    font-size: 12px;
 }
 
 .dialog-footer {
@@ -100,26 +126,33 @@
         width: 100% !important;
     }
 
-.date-picker-size-space {
-    width: 100%;
-    margin-bottom: -1.5rem;
-}
-
-.date-picker-size-space div{
-    width:100% !important;
-}
-
-    .date-picker-size-space .ms-Label{
-        font-weight:100 !important;
-    }
-
-    .date-picker-size-space .ms-TextField-fieldGroup {
-        background: #F3F2F1 !important;
-        border: none !important;
-    }
-
 .edit-project-half-field-teamSize {
     width: 59%;
+}
+
+.date-picker-style-for-small-device {
+    max-width: 45vw !important;
+    width: 45vw !important;
+    
+}
+
+.date-picker-size-space .ms-Label {
+    font-weight: 100 !important;
+    font-size: 1.2rem !important;
+}
+
+.date-picker-style{
+    max-width: 25rem !important;
+    width: 25rem !important;
+}
+
+.default-datepicker .ms-TextField-fieldGroup{
+    border: none !important;
+    background-color: rgb(243, 242, 241) !important;
+}
+
+.dark-datepicker .ms-TextField-fieldGroup {
+    border: none !important;
 }
 
 .edit-project-half-field {
@@ -135,6 +168,7 @@
     height: 2.67rem !important;
     margin-right: 0.33rem !important;
 }
+
 
 @media only screen and (max-width: 650px) {
     .dialog-container {

@@ -16,15 +16,22 @@ namespace Microsoft.Teams.Apps.Grow.Helpers.CustomValidations
         /// Initializes a new instance of the <see cref="DocumentLinksValidationAttribute"/> class.
         /// </summary>
         /// <param name="maximumCount">Maximum count of document links for validation.</param>
-        public DocumentLinksValidationAttribute(int maximumCount)
+        /// <param name="maximumLength">Maximum length of document link for validation.</param>
+        public DocumentLinksValidationAttribute(int maximumCount, int maximumLength)
         {
             this.MaximumCount = maximumCount;
+            this.MaximumLength = maximumLength;
         }
 
         /// <summary>
         /// Gets maximum count of links for validation.
         /// </summary>
         public int MaximumCount { get; }
+
+        /// <summary>
+        /// Gets maximum length of document link.
+        /// </summary>
+        public int MaximumLength { get; }
 
         /// <summary>
         /// Validate document link based on link length and number of links separated by comma.
@@ -34,43 +41,48 @@ namespace Microsoft.Teams.Apps.Grow.Helpers.CustomValidations
         /// <returns>Validation result (either error message for failed validation or success).</returns>
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            if (value != null && value.GetType() == typeof(string))
+            if (value != null)
             {
-                var documentLinks = (string)value;
-                if (!string.IsNullOrEmpty(documentLinks))
+                if (value.GetType() == typeof(string))
                 {
-                    var documentLinksList = documentLinks.Split(';');
+                    var documentLinks = (string)value;
 
-                    if (documentLinksList.Length > this.MaximumCount)
+                    if (!string.IsNullOrEmpty(documentLinks))
                     {
-                        return new ValidationResult("Maximum document links count exceeded");
-                    }
+                        var documentLinksList = documentLinks.Split(';');
 
-                    foreach (var documentLink in documentLinksList)
-                    {
-                        if (string.IsNullOrWhiteSpace(documentLink))
+                        if (documentLinksList.Length > this.MaximumCount)
                         {
-                            return new ValidationResult("Document link cannot be null or empty");
+                            return new ValidationResult("Maximum document links count exceeded");
                         }
 
-                        if (documentLink.Length > 400)
+                        foreach (var documentLink in documentLinksList)
                         {
-                            return new ValidationResult("Maximum document link length exceeded");
-                        }
+                            if (string.IsNullOrWhiteSpace(documentLink))
+                            {
+                                return new ValidationResult("Document link cannot be null or empty");
+                            }
 
-                        if (!this.IsUrlValid(documentLink))
-                        {
-                            return new ValidationResult("Document link doesn't match URL format.");
+                            if (documentLink.Length > this.MaximumLength)
+                            {
+                                return new ValidationResult("Maximum document link length exceeded");
+                            }
+
+                            if (!this.IsUrlValid(documentLink))
+                            {
+                                return new ValidationResult("Document link doesn't match URL format.");
+                            }
                         }
                     }
 
                     return ValidationResult.Success;
                 }
 
-                return new ValidationResult("At least one document link should be provided.");
+                return new ValidationResult("Document link should be in string format.");
             }
 
-            return new ValidationResult("Document link should be in string format.");
+            // Document links are not mandatory hence value can be null
+            return ValidationResult.Success;
         }
 
         /// <summary>

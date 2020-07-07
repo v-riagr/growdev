@@ -78,7 +78,7 @@ namespace Microsoft.Teams.Apps.Grow.Helpers.CustomValidations
                             return new ValidationResult("Maximum skill length exceeded.");
                         }
 
-                        if (skill.ToCharArray().Where(skill => invalidCharacters.Contains(skill)).Any())
+                        if (skill.ToCharArray().Where(item => invalidCharacters.Contains(item)).Any())
                         {
                             return new ValidationResult("Special characters are not allowed in skill.");
                         }

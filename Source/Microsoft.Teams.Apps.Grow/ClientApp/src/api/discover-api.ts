@@ -8,18 +8,18 @@ import { getBaseUrl } from '../configVariables';
 let baseAxiosUrl = getBaseUrl() + '/api';
 
 /**
-* Get discover posts for tab
-* @param pageCount Current page count for which posts needs to be fetched
+* Get All projects for tab.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const getDiscoverPosts = async (pageCount: number): Promise<any> => {
+export const getAllProjects = async (pageCount: number): Promise<any> => {
 
     let url = `${baseAxiosUrl}/project?pageCount=${pageCount}`;
     return await axios.get(url);
 }
 
 /**
-* Get user created projects
-* @param pageCount Current page count for which projects needs to be fetched
+* Get user created projects.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
 export const getMyCreatedProjects = async (pageCount: number): Promise<any> => {
 
@@ -28,8 +28,8 @@ export const getMyCreatedProjects = async (pageCount: number): Promise<any> => {
 }
 
 /**
-* Get user created projects
-* @param pageCount Current page count for which projects needs to be fetched
+* Get user joined projects.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
 export const getMyJoinedProjects = async (pageCount: number): Promise<any> => {
 
@@ -38,112 +38,92 @@ export const getMyJoinedProjects = async (pageCount: number): Promise<any> => {
 }
 
 /**
-* Get discover posts for tab in a team
-* @param teamId Team Id for which discover posts needs to be fetched
-* @param pageCount Current page count for which posts needs to be fetched
+* Get all projects for tab in a team.
+* @param teamId Team Id for which projects needs to be fetched.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const getTeamDiscoverPosts = async (teamId: string, pageCount: number): Promise<any> => {
+export const getTeamAllProjects = async (teamId: string, pageCount: number): Promise<any> => {
 
     let url = `${baseAxiosUrl}/teamproject/team-projects?teamId=${teamId}&pageCount=${pageCount}`;
     return await axios.get(url);
 }
 
 /**
-* Get filtered discover posts for tab
-* @param postTypes Selected post types separated by semicolon
-* @param sharedByNames Selected author names separated by semicolon
-* @param tags Selected tags separated by semicolon
-* @param pageCount Current page count for which posts needs to be fetched
+* Get filtered projects for tab.
+* @param projectStatus Selected project status separated by semicolon.
+* @param addedByNames Selected project owner names separated by semicolon.
+* @param skills Selected skills separated by semicolon
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const getFilteredPosts = async (postTypes: string, sharedByNames: string, tags: string, pageCount: number): Promise<any> => {
-    let url = `${baseAxiosUrl}/project/applied-filters-projects?status=${postTypes}&projectOwnerNames=${sharedByNames}
-                &skills=${tags}&pageCount=${pageCount}`;
+export const getFilteredProjects = async (projectStatus: string, addedByNames: string, skills: string, pageCount: number): Promise<any> => {
+    let url = `${baseAxiosUrl}/project/applied-filters-projects?status=${projectStatus}&projectOwnerNames=${addedByNames}
+                &pageCount=${pageCount}&skills=${encodeURIComponent(skills)}`;
     return await axios.get(url);
 }
 
 /**
-* Get filtered discover posts for tab
-* @param postTypes Selected post types separated by semicolon
-* @param sharedByNames Selected author names separated by semicolon
-* @param tags Selected tags separated by semicolon
-* @param teamId Team Id for which posts needs to be fetched
-* @param pageCount Current page count for which posts needs to be fetched
+* Get filtered projects for tab in a team.
+* @param projectStatus Selected projects status separated by semicolon.
+* @param addedByNames Selected project owner names separated by semicolon.
+* @param skills Selected skills separated by semicolon.
+* @param teamId Team Id for which projects needs to be fetched.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const getFilteredTeamPosts = async (postTypes: string, sharedByNames: string, tags: string, teamId: string, pageCount: number): Promise<any> => {
-    let url = `${baseAxiosUrl}/teamproject/applied-filters-projects?status=${postTypes}&projectOwnerNames=${sharedByNames}
-                &skills=${tags}&pageCount=${pageCount}&teamId=${teamId}`;
+export const getFilteredTeamProjects = async (projectStatus: string, addedByNames: string, skills: string, teamId: string, pageCount: number): Promise<any> => {
+    let url = `${baseAxiosUrl}/teamproject/applied-filters-projects?status=${projectStatus}&projectOwnerNames=${addedByNames}
+                &pageCount=${pageCount}&teamId=${teamId}&skills=${encodeURIComponent(skills)}`;
     return await axios.get(url);
 }
 
 /**
-* Get unique tags
+* Get unique skills.
 */
-export const getTags = async (): Promise<any> => {
+export const getSkills = async (): Promise<any> => {
     let url = `${baseAxiosUrl}/project/unique-skills?searchText=*`;
     return await axios.get(url);
 }
 
 /**
-* Update post content details
-* @param postContent Post details object to be updated
+* Update project content details.
+* @param projectContent Project details object to be updated.
 */
-export const updatePostContent = async (postContent: any): Promise<any> => {
+export const updateProjectContent = async (projectContent: any): Promise<any> => {
 
     let url = `${baseAxiosUrl}/project`;
-    return await axios.patch(url, postContent);
+    return await axios.patch(url, projectContent);
 }
 
 /**
-* Add new post
-* @param postContent Post details object to be added
+* Add new project.
+* @param projectContent Project details object to be added.
 */
-export const addNewProjectContent = async (postContent: any): Promise<any> => {
+export const addNewProjectContent = async (projectContent: any): Promise<any> => {
 
     let url = `${baseAxiosUrl}/project`;
-    return await axios.post(url, postContent);
+    return await axios.post(url, projectContent);
 }
 
 /**
-* Delete post from storage
-* @param post Id of post to be deleted
+* Delete project from storage.
+* @param project details to be deleted.
 */
-export const deletePost = async (project: any): Promise<any> => {
+export const deleteProject = async (project: any): Promise<any> => {
 
     let url = `${baseAxiosUrl}/project?projectId=${project.projectId}&userId=${project.createdByUserId}`;
     return await axios.delete(url);
 }
 
 /**
-* Add user vote
-* @param userVote Vote object to be added in storage
+* Get list of project owners.
 */
-export const addUserVote = async (userVote: any): Promise<any> => {
-
-    let url = `${baseAxiosUrl}/uservote/vote`;
-    return await axios.post(url, userVote);
-}
-
-/**
-* delete user vote
-* @param userVote Vote object to be deleted from storage
-*/
-export const deleteUserVote = async (userVote: any): Promise<any> => {
-
-    let url = `${baseAxiosUrl}/uservote?projectId=` + userVote.postId;
-    return await axios.delete(url);
-}
-
-/**
-* Get list of authors
-*/
-export const getAuthors = async (): Promise<any> => {
+export const getProjectOwners = async (): Promise<any> => {
 
     let url = `${baseAxiosUrl}/project/project-owners`;
     return await axios.get(url);
 }
 
 /**
-* Get list of authors
+* Get list of project owners for a team based on configured skills.
 */
 export const getTeamAuthors = async (teamId: string): Promise<any> => {
 
@@ -152,39 +132,47 @@ export const getTeamAuthors = async (teamId: string): Promise<any> => {
 }
 
 /**
-* Add new post
-* @param searchText Search text typed by user
-* @param pageCount Current page count for which posts needs to be fetched
+* Filter data based on title and skills.
+* @param searchText Search text typed by user.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const filterTitleAndTags = async (searchText: string, pageCount: number): Promise<any> => {
-    let url = baseAxiosUrl + `/project/search-projects?searchText=${searchText}&pageCount=${pageCount}`;
+export const filterTitleAndSkills = async (searchText: string, pageCount: number): Promise<any> => {
+    let url = baseAxiosUrl + `/project/search-projects?searchText=${encodeURIComponent(searchText)}&pageCount=${pageCount}`;
     return await axios.get(url);
 }
 
 /**
-* Add new post
-* @param searchText Search text typed by user
-* @param teamId Team Id for which post needs to be filtered
-* @param pageCount Current page count for which posts needs to be fetched
+* Filter data based on title and skills for a team.
+* @param searchText Search text typed by user.
+* @param teamId Team Id for which projects needs to be filtered.
+* @param pageCount Current page count for which projects needs to be fetched.
 */
-export const filterTitleAndTagsTeam = async (searchText: string, teamId: string, pageCount: number): Promise<any> => {
-    let url = baseAxiosUrl + `/teamproject/team-search-projects?searchText=${searchText}&teamId=${teamId}&pageCount=${pageCount}`;
+export const filterTitleAndSkillsTeam = async (searchText: string, teamId: string, pageCount: number): Promise<any> => {
+    let url = baseAxiosUrl + `/teamproject/team-search-projects?searchText=${encodeURIComponent(searchText)}&teamId=${teamId}&pageCount=${pageCount}`;
     return await axios.get(url);
 }
 
 /**
-* Add new post
-* @param projectContent Search text typed by user
+* Get user information from user object ids.
+* @param userObjectIds User object ids of users separated by ';'
+*/
+export const getUserDetails = async (userObjectIds: string): Promise<any> => {
+    let url = baseAxiosUrl + `/project-workflow/user-info?userObjectIds=${userObjectIds}`;
+    return await axios.get(url);
+}
+
+/**
+* Join a project.
+* @param projectContent Search text typed by user.
 */
 export const joinProject = async (projectContent : any): Promise<any> => {
-    let url = baseAxiosUrl + `/project-workflow/join-project`;
-    return await axios.post(url, projectContent);
+    let url = baseAxiosUrl + `/project-workflow/join-project?projectId=${projectContent.projectId}&createdByUserId=${projectContent.createdByUserId}`;
+    return await axios.post(url);
 }
 
-
 /**
-* close projects
-* @param participantDetails Search text typed by user
+* close a project.
+* @param participantDetails Search text typed by user.
 */
 export const closeProject = async (participantDetails: any): Promise<any> => {
     let url = baseAxiosUrl + `/project-workflow/close-project`;

@@ -12,11 +12,13 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Common;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
     using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
-    using static Microsoft.Teams.Apps.Grow.Helpers.ProjectStatusHelper;
+    using Microsoft.Teams.Apps.Grow.Models.Configuration;
 
     /// <summary>
     /// Controller to handle project API operations.
@@ -26,6 +28,11 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     [Authorize]
     public class ProjectController : BaseGrowController
     {
+        /// <summary>
+        /// Maximum number of owner names to get.
+        /// </summary>
+        private const int MaximumOwnersCount = 50;
+
         /// <summary>
         /// Logs errors and information.
         /// </summary>
@@ -60,14 +67,20 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         /// <param name="projectStorageProvider">Provides methods for add, update and delete project operations from database.</param>
         /// <param name="projectSearchService">Project search service for fetching project with search criteria and filters.</param>
         /// <param name="notificationHelper">Provides methods to send notifications to users.</param>
+        /// <param name="tokenAcquisitionHelper">Provides </param>
+        /// <param name="azureAdOptions">Instance of IOptions to read data from application configuration.</param>
+        /// <param name="confidentialClientApp">Instance of ConfidentialClientApplication class.</param>
         public ProjectController(
             ILogger<ProjectController> logger,
             TelemetryClient telemetryClient,
             IProjectHelper projectHelper,
             IProjectStorageProvider projectStorageProvider,
             IProjectSearchService projectSearchService,
-            NotificationHelper notificationHelper)
-            : base(telemetryClient)
+            NotificationHelper notificationHelper,
+            IOptions<AzureActiveDirectorySettings> azureAdOptions,
+            TokenAcquisitionHelper tokenAcquisitionHelper,
+            IConfidentialClientApplication confidentialClientApp)
+            : base(telemetryClient, azureAdOptions, tokenAcquisitionHelper, confidentialClientApp, logger)
         {
             this.logger = logger;
             this.projectHelper = projectHelper;
@@ -88,8 +101,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid value for argument pageCount.");
-                return this.BadRequest("Invalid value for argument pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.GetAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -109,6 +122,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while fetching projects for user {this.UserAadId}.");
                 this.logger.LogError(ex, $"Error while fetching projects for user {this.UserAadId}.");
                 throw;
             }
@@ -122,12 +136,15 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody] ProjectEntity projectDetail)
         {
+            this.RecordEvent("Call to add project details.");
             this.logger.LogInformation("Call to add project details.");
 
-#pragma warning disable CA1062 // project details are validated by model validations for null check and is responded with bad request status
+#pragma warning disable CA1062 // Project start date and end date are validated by model validations and responded with bad request status.
             if (projectDetail.ProjectStartDate > projectDetail.ProjectEndDate)
-#pragma warning restore CA1062 // project details are validated by model validations for null check and is responded with bad request status
+#pragma warning restore CA1062 // Project start date and end date are validated by model validations and responded with bad request status.
             {
+                this.RecordEvent("Project start date must be less than end date.");
+                this.logger.LogInformation("Project start date must be less than end date.");
                 return this.BadRequest("Project start date must be less than end date.");
             }
 
@@ -136,7 +153,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 var projectEntity = new ProjectEntity
                 {
                     ProjectId = Guid.NewGuid().ToString(),
-                    Status = (int)StatusEnum.NotStarted, // Project status as 'Not Started'.
+                    Status = (int)ProjectStatus.NotStarted, // Project status as 'Not Started'.
                     CreatedByUserId = this.UserAadId,
                     CreatedByName = this.UserName,
                     CreatedDate = DateTime.UtcNow,
@@ -149,7 +166,6 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                     ProjectEndDate = projectDetail.ProjectEndDate,
                     ProjectClosedDate = projectDetail.ProjectEndDate,
                     ProjectParticipantsUserIds = string.Empty,
-                    ProjectParticipantsUserMapping = string.Empty,
                     TeamSize = projectDetail.TeamSize,
                     IsRemoved = false,
                 };
@@ -165,12 +181,14 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 }
                 else
                 {
-                    this.RecordEvent("Save project - HTTP Post call failed");
+                    this.logger.LogError("Save project - HTTP Post call failed.");
+                    this.RecordEvent("Save project - HTTP Post call failed.");
                     return this.Ok(false);
                 }
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while adding new project.");
                 this.logger.LogError(ex, "Error while adding new project.");
                 throw;
             }
@@ -196,6 +214,15 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 return this.BadRequest("Project Id cannot be null or empty.");
             }
 
+#pragma warning disable CA1062 // Project start date and end date are validated by model validations and responded with bad request status.
+            if (projectDetails.ProjectStartDate > projectDetails.ProjectEndDate)
+#pragma warning restore CA1062 // Project start date and end date are validated by model validations and responded with bad request status.
+            {
+                this.RecordEvent("Project start date must be less than end date.");
+                this.logger.LogInformation("Project start date must be less than end date.");
+                return this.BadRequest("Project start date must be less than end date.");
+            }
+
             try
             {
                 // Validating Project Id as it will be generated at server side in case of adding new project but cannot be null or empty in case of update.
@@ -205,12 +232,12 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 {
                     this.logger.LogError($"Could not find project {projectDetails.ProjectId} for user {this.UserAadId}.");
                     this.RecordEvent("Update project - HTTP Patch call failed");
-                    return this.NotFound(new { message = $"Could not find project for user." });
+                    return this.NotFound($"Project {projectDetails.ProjectId} does not exists.");
                 }
 
                 var updatedProjectParticipants = projectDetails.ProjectParticipantsUserIds.Split(';');
                 var currentProjectParticipants = currentProject.ProjectParticipantsUserIds.Split(';');
-                List<string> removedProjectParticipants = currentProjectParticipants.Except(updatedProjectParticipants).ToList();
+                var removedProjectParticipants = currentProjectParticipants.Except(updatedProjectParticipants).ToList();
 
                 currentProject.Status = projectDetails.Status;
                 currentProject.Title = projectDetails.Title;
@@ -220,8 +247,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 currentProject.ProjectStartDate = projectDetails.ProjectStartDate;
                 currentProject.ProjectEndDate = projectDetails.ProjectEndDate;
                 currentProject.TeamSize = projectDetails.TeamSize;
-                currentProject.ProjectParticipantsUserIds = projectDetails.ProjectParticipantsUserIds;
-                currentProject.ProjectParticipantsUserMapping = projectDetails.ProjectParticipantsUserMapping;
+                currentProject.ProjectParticipantsUserIds = projectDetails.ProjectParticipantsUserIds.Trim(';');
+                currentProject.UpdatedDate = DateTime.UtcNow;
 
                 var upsertResult = await this.projectStorageProvider.UpsertProjectAsync(currentProject);
 
@@ -250,6 +277,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while updating project details.");
                 this.logger.LogError(ex, "Error while updating project details.");
                 throw;
             }
@@ -276,7 +304,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 var projectDetails = await this.projectStorageProvider.GetProjectAsync(this.UserAadId, projectId);
 
                 // Only projects with 'Not started' status are allowed to delete.
-                if (projectDetails == null && projectDetails.IsRemoved && projectDetails.Status == (int)StatusEnum.NotStarted)
+                if (projectDetails == null && projectDetails.IsRemoved && projectDetails.Status == (int)ProjectStatus.NotStarted)
                 {
                     this.logger.LogError($"Project {projectId} created by user {this.UserAadId} not found for deletion.");
                     return this.NotFound($"Cannot find project {projectId} created by user {this.UserAadId} for deletion.");
@@ -305,6 +333,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while deleting project.");
                 this.logger.LogError(ex, "Error while deleting project.");
                 throw;
             }
@@ -334,6 +363,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while getting project details.");
                 this.logger.LogError(ex, "Error while getting project details.");
                 throw;
             }
@@ -367,7 +397,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
                 var ownerNames = projects.GroupBy(project => project.CreatedByUserId)
                     .OrderByDescending(groupedProject => groupedProject.Count())
-                    .Take(50)
+                    .Take(MaximumOwnersCount)
                     .Select(project => project.First().CreatedByName)
                     .OrderBy(createdByName => createdByName);
 
@@ -377,6 +407,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to get unique project owner names.");
                 this.logger.LogError(ex, "Error while making call to get unique project owner names.");
                 throw;
             }
@@ -395,8 +426,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("PageCount found to be less than or equal to zero while searching projects");
-                return this.BadRequest("PageCount cannot be less than or equal to zero.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.SearchProjectsAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRescords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -416,6 +447,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to get projects as per the Title/Description/Skills search text.");
                 this.logger.LogError(ex, "Error while making call to get projects as per the Title/Description/Skills search text.");
                 throw;
             }
@@ -436,8 +468,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid argument value for pageCount.");
-                return this.BadRequest("Invalid argument value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.GetFilteredProjectsAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -462,6 +494,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while fetching filtered projects.");
                 this.logger.LogError(ex, "Error while fetching filtered projects.");
                 throw;
             }
@@ -483,13 +516,15 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 return this.BadRequest("Search text is either null or empty.");
             }
 
+            var uniqueSkills = new List<string>();
+
             try
             {
                 var projects = await this.projectSearchService.GetProjectsAsync(ProjectSearchScope.UniqueSkills, searchText, userObjectId: null);
 
                 if (projects != null && projects.Any())
                 {
-                    var uniqueSkills = this.projectHelper.GetUniqueSkills(projects, searchText);
+                    uniqueSkills = this.projectHelper.GetUniqueSkills(projects, searchText).ToList();
                     this.RecordEvent("Project unique skills- HTTP Get call succeeded.");
 
                     return this.Ok(uniqueSkills);
@@ -499,10 +534,11 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                     this.logger.LogInformation($"Skills not found for search text {searchText}.");
                 }
 
-                return this.Ok(new List<string>());
+                return this.Ok(uniqueSkills);
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to get unique skills.");
                 this.logger.LogError(ex, "Error while making call to get unique skills.");
                 throw;
             }
@@ -520,8 +556,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid parameter value for pageCount.");
-                return this.BadRequest("Invalid parameter value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.UserJoinedProjects)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -551,6 +587,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while fetching user joined projects for user {this.UserAadId}.");
                 this.logger.LogError(ex, $"Error while fetching user joined projects for user {this.UserAadId}.");
                 throw;
             }
@@ -568,8 +605,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid parameter value for pageCount.");
-                return this.BadRequest("Invalid parameter value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.UserCreatedProjects)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -597,6 +634,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while fetching created projects for user {this.UserAadId}.");
                 this.logger.LogError(ex, $"Error while fetching created projects for user {this.UserAadId}.");
                 throw;
             }

@@ -5,23 +5,33 @@
 namespace Microsoft.Teams.Apps.Grow.Models
 {
     /// <summary>
-    /// Represents status model.
+    /// Valid project status types.
     /// </summary>
-    public class ProjectStatus
+    public enum ProjectStatus
     {
         /// <summary>
-        /// Gets or sets unique value for each post type.
+        /// No status.
         /// </summary>
-        public int StatusId { get; set; }
+        None = 0,
 
         /// <summary>
-        /// Gets or sets post type name.
+        /// Project not yet started.
         /// </summary>
-        public string StatusName { get; set; }
+        NotStarted = 1,
 
         /// <summary>
-        /// Gets or sets post icon name.
+        /// Project is active.
         /// </summary>
-        public string IconName { get; set; }
+        Active = 2,
+
+        /// <summary>
+        /// Project is blocked.
+        /// </summary>
+        Blocked = 3,
+
+        /// <summary>
+        /// Project is closed.
+        /// </summary>
+        Closed = 4,
     }
 }

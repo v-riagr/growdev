@@ -152,6 +152,12 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                         Wrap = true,
                         Size = AdaptiveTextSize.Medium,
                     },
+                    new AdaptiveTextBlock
+                    {
+                        Text = localizer.GetString("WelcomeCardGetStartedText"),
+                        Wrap = true,
+                        Size = AdaptiveTextSize.Medium,
+                    },
                 },
                 Actions = new List<AdaptiveAction>
                 {

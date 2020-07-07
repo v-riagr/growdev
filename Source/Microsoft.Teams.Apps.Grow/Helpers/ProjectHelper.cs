@@ -211,6 +211,27 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
         }
 
         /// <summary>
+        /// Escaping unsafe and reserved characters from Azure Search Service search query.
+        /// https://docs.microsoft.com/en-us/azure/search/query-lucene-syntax#escaping-special-characters
+        /// </summary>
+        /// <param name="query">Query which the user had typed in search field.</param>
+        /// <returns>Returns string escaping unsafe and reserved characters.</returns>
+        public string EscapeCharactersInQuery(string query)
+        {
+            string[] specialCharactersInAzure = { "\"", "\\", "/", "+", "-", "&", "|", "!", "(", ")", "{", "}", "[", "]", "^", "~", "*", "?", ":" };
+
+            foreach (var str in specialCharactersInAzure)
+            {
+                if (query.Contains(str, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    query = query.Replace(str, @"\" + str, StringComparison.CurrentCultureIgnoreCase);
+                }
+            }
+
+            return query;
+        }
+
+        /// <summary>
         /// Create project status query to fetch projects as per the selected filter.
         /// </summary>
         /// <param name="status">Semicolon separated status of projects like Not started/Active/Blocked/Closed.</param>

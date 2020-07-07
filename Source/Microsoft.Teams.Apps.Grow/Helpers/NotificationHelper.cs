@@ -143,9 +143,13 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
         /// Sends notification to team members when project is closed.
         /// </summary>
         /// <param name="closeProjectModel">CloseProjectModel model containing project closure metadata.</param>
+        /// <param name="projectTitle">Title of the project.</param>
+        /// <param name="projectOwnerName">Owner of the project.</param>
         /// <returns>A Task representing notification sent to all members in project.</returns>
         public async Task SendProjectClosureNotificationAsync(
-            CloseProjectModel closeProjectModel)
+            CloseProjectModel closeProjectModel,
+            string projectTitle,
+            string projectOwnerName)
         {
             closeProjectModel = closeProjectModel ?? throw new ArgumentNullException(nameof(closeProjectModel));
 
@@ -153,8 +157,8 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
             {
                 List<string> acquiredSkills = participant.AcquiredSkills.Split(new char[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries).ToList();
                 var adaptiveCard = MessageFactory.Attachment(UserNotificationCard.SendProjectClosureCard(
-                    closeProjectModel.ProjectTitle,
-                    closeProjectModel.ProjectOwnerName,
+                    projectTitle,
+                    projectOwnerName,
                     this.botOptions.Value.ManifestId,
                     participant.Feedback,
                     acquiredSkills,
@@ -215,6 +219,8 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
             string projectTitle,
             string projectOwner)
         {
+            userIds = userIds ?? throw new ArgumentNullException(nameof(userIds));
+
             foreach (var userId in userIds)
             {
                 var adaptiveCard = MessageFactory.Attachment(UserNotificationCard.SendProjectRemovalCard(
@@ -253,8 +259,10 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                 ChannelId = Constants.TeamsBotFrameworkChannelId,
                 Bot = new ChannelAccount() { Id = $"28:{this.aadOptions.Value.ClientId}" },
                 ServiceUrl = servicePath,
-                Conversation = new ConversationAccount() { ConversationType = Constants.ConversationType, Id = conversationId, TenantId = this.aadOptions.Value.TenantId },
+                Conversation = new ConversationAccount() { Id = conversationId },
             };
+
+            this.logger.LogInformation($"sending notification to conversationId- {conversationId}");
 
             try
             {
@@ -270,7 +278,9 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                     CancellationToken.None);
                 });
             }
+#pragma warning disable CA1031 // Caching general exception to continue execution for sending notification cards to user.
             catch (Exception ex)
+#pragma warning restore CA1031 // Caching general exception to continue execution for sending notification cards to user.
             {
                 this.logger.LogError(ex, $"Error while sending notification card.");
             }

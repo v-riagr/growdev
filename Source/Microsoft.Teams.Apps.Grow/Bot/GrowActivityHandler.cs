@@ -25,8 +25,6 @@ namespace Microsoft.Teams.Apps.Grow.Bot
     using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using static Microsoft.Teams.Apps.Grow.Helpers.ProjectStatusHelper;
 
     /// <summary>
     /// This class is responsible for reacting to incoming events from Microsoft Teams sent from BotFramework.
@@ -247,10 +245,12 @@ namespace Microsoft.Teams.Apps.Grow.Bot
         /// <param name="taskModuleRequest">Task module invoke request value payload.</param>
         /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
         /// <returns>A task that represents the work queued to execute.</returns>
+#pragma warning disable CS1998 // Overriding bot method
         protected override async Task<TaskModuleResponse> OnTeamsTaskModuleFetchAsync(
             ITurnContext<IInvokeActivity> turnContext,
             TaskModuleRequest taskModuleRequest,
             CancellationToken cancellationToken)
+#pragma warning restore CS1998 // Overriding bot method
         {
             try
             {
@@ -260,28 +260,30 @@ namespace Microsoft.Teams.Apps.Grow.Bot
                 this.RecordEvent(nameof(this.OnTeamsTaskModuleFetchAsync), turnContext);
 
                 var activity = turnContext.Activity;
-                var postedValues = JsonConvert.DeserializeObject<BotCommand>(JObject.Parse(taskModuleRequest.Data.ToString()).SelectToken("data").ToString());
+                var postedValues = JsonConvert.DeserializeObject<BotCommand>(taskModuleRequest.Data.ToString());
                 var command = postedValues.Text;
 
-                return command.ToUpperInvariant() switch
+                switch (command.ToUpperInvariant())
                 {
-                    // Messaging Extension attachment card view project details button.
-                    Constants.ViewProjectDetail => new TaskModuleResponse
-                    {
-                        Task = new TaskModuleContinueResponse
+                    case Constants.ViewProjectDetail: // Messaging Extension attachment card view project details button.
+                        return new TaskModuleResponse
                         {
-                            Type = "continue",
-                            Value = new TaskModuleTaskInfo()
+                            Task = new TaskModuleContinueResponse
                             {
-                                Url = $"{this.botOptions.Value.AppBaseUri}/join-project?projectId={postedValues.ProjectId}&currentUserId={activity.From.AadObjectId}&createdByUserId={postedValues.CreatedByUserId}",
-                                Height = JoinProjectTaskModuleHeight,
-                                Width = JoinProjectTaskModuleWidth,
-                                Title = this.localizer.GetString("ApplicationName"),
+                                Type = "continue",
+                                Value = new TaskModuleTaskInfo()
+                                {
+                                    Url = $"{this.botOptions.Value.AppBaseUri}/join-project?projectId={postedValues.ProjectId}&currentUserId={activity.From.AadObjectId}&createdByUserId={postedValues.CreatedByUserId}",
+                                    Height = JoinProjectTaskModuleHeight,
+                                    Width = JoinProjectTaskModuleWidth,
+                                    Title = this.localizer.GetString("ApplicationName"),
+                                },
                             },
-                        },
-                    },
-                    _ => default,
-                };
+                        };
+
+                    default:
+                        return null;
+                }
             }
             catch (Exception ex)
             {
@@ -367,13 +369,12 @@ namespace Microsoft.Teams.Apps.Grow.Bot
                     var projectDetails = await this.projectStorageProvider.GetProjectAsync(joinProjectData.ProjectDetails.CreatedByUserId, joinProjectData.ProjectDetails.ProjectId);
 
                     // Allow user to join project which has status 'Active' and 'Not started'.
-                    if (projectDetails != null && !projectDetails.IsRemoved && (projectDetails.Status == (int)StatusEnum.NotStarted || projectDetails.Status == (int)StatusEnum.Active))
+                    if (projectDetails != null && !projectDetails.IsRemoved && (projectDetails.Status == (int)ProjectStatus.NotStarted || projectDetails.Status == (int)ProjectStatus.Active))
                     {
                         // If there no existing participants
                         if (string.IsNullOrEmpty(projectDetails.ProjectParticipantsUserIds))
                         {
                             projectDetails.ProjectParticipantsUserIds = currentUser.AadObjectId;
-                            projectDetails.ProjectParticipantsUserMapping = $"{currentUser.AadObjectId}:{currentUser.Name}";
                         }
                         else
                         {
@@ -395,7 +396,6 @@ namespace Microsoft.Teams.Apps.Grow.Bot
                             }
 
                             projectDetails.ProjectParticipantsUserIds += $";{currentUser.AadObjectId}";
-                            projectDetails.ProjectParticipantsUserMapping += $";{currentUser.AadObjectId}:{currentUser.Name}";
                         }
 
                         // Update the project status.
@@ -441,7 +441,9 @@ namespace Microsoft.Teams.Apps.Grow.Bot
 
                 return null;
             }
+#pragma warning disable CA1031 // Caching general exception to respond user with error page in Task Module.
             catch (Exception ex)
+#pragma warning restore CA1031 // Caching general exception to respond user with error page in Task Module.
             {
                 this.logger.LogError(ex, "Error in submit action of task module.");
                 return this.GetErrorResponse();
@@ -579,13 +581,13 @@ namespace Microsoft.Teams.Apps.Grow.Bot
             bool deletedTeamDetailsStatus = await this.teamStorageProvider.DeleteTeamDetailAsync(teamEntity);
             if (!deletedTeamDetailsStatus)
             {
-                this.logger.LogWarning("Unable to remove team details from table storage.");
+                this.logger.LogWarning("Unable to remove team details from Azure storage.");
             }
 
             bool deletedSkillStatus = await this.teamSkillStorageProvider.DeleteTeamSkillsAsync(teamId);
             if (!deletedSkillStatus)
             {
-                this.logger.LogWarning("Unable to remove team skills details from table storage.");
+                this.logger.LogWarning("Unable to remove team skills details from Azure storage.");
             }
         }
     }

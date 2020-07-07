@@ -1,18 +1,15 @@
-﻿// <copyright file="close-project-page.tsx" company="Microsoft">
+﻿// <copyright file="close-project-table.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Input, Text, TextArea, Table, ItemLayout, Avatar, Flex } from "@fluentui/react-northstar";
-import { Container, Col, Row } from "react-bootstrap";
+import { Input, Text, TextArea, Table, Avatar, Flex, Accordion, List, Label, CloseIcon } from "@fluentui/react-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";
 import { ICloseProjectMemberDetails } from './close-project-wrapper';
 import { IProjectDetails } from "../card-view/discover-wrapper-page"
-import { getBaseUrl } from '../../configVariables';
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 import Resources from "../../constants/resources";
-import Skills from "./skills";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../../styles/close-project.css";
 
@@ -29,10 +26,11 @@ interface ICloseProjectTableProps extends WithTranslation {
     onSkillRemoveClick: (index: number, projectMemberIndex: number) => void;
     inputValue: string;
     onDescriptionChange: (description: string, index: number) => void;
+    screenWidth: number
 }
 
 interface ICloseProjectTableState {
-
+    theme: string
 }
 
 class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseProjectTableState> {
@@ -44,7 +42,7 @@ class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseP
 
 
         this.state = {
-
+            theme:""
         }
     }
 
@@ -54,7 +52,7 @@ class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseP
     async componentDidMount() {
         microsoftTeams.initialize();
         microsoftTeams.getContext((context: microsoftTeams.Context) => {
-
+            this.setState({ theme: context.theme! })
         });
     }
 
@@ -85,60 +83,44 @@ class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseP
             ],
         };
 
-        let memberName = this.props.memberDetails.projectParticipantsUserMapping.split(';')
-        let count = 0;
-
         let privateListTableRows = this.props.projectMemberDetails.map((teamMember: ICloseProjectMemberDetails, index: number) => (
             {
                 key: index,
                 items: [
                     {
-                        content: <ItemLayout
-                            className="project-members-heading"
-                            media={<Avatar className="app-logo-container" name={teamMember.name} />}
-                            header={<Text content={teamMember.name} weight="bold" />}
-                            content={<Text className="app-dialog-heading" content="" weight="semibold" size="small" />}
-                        />, truncateContent: true
+                        content:
+                            <><Avatar name={teamMember.name} /> <Text
+                                key={index}
+                                content={teamMember.name}
+                                title={teamMember.name}
+                                className="project-endorsee"
+                            /></>, truncateContent: true
                     },
                     {
                         content:
                             <>
-                                {
-                                    this.props.emptySkillsCheck.length > 0 ?
-                                        this.props.emptySkillsCheck.map((value) => {
-                                            if (index === value) {
-                                                return (
-                                                    <Flex key={index} gap="gap.smaller" vAlign="start">
-                                                        <Text className="error-text" key={index} content={this.props.errorMessage} />
-                                                    </Flex>
-                                                );
-                                            }
-                                        })
-                                        :
-                                        this.props.showSkillCountError ?
-                                            this.props.errorIndex === index ?
-                                                <Flex key={index} gap="gap.smaller" vAlign="start">
-                                                    <Text className="error-text" key={index} content={this.props.errorMessage} />
-                                                </Flex> : <></> :
-                                            <></>
-                                }
+                                <Flex key={index} gap="gap.smaller" vAlign="start">
+                                    <Text className="error-text" key={index} content={teamMember.error} />
+                                </Flex>
                                 <Input maxLength={Resources.closeProjectAcquiredSkillsMaxLength}
                                     value={this.props.skillChangeIndex === index ? this.props.inputValue : ""}
                                     onKeyDown={(event: any) => this.props.onSkillKeyDown(event.keyCode, index)}
                                     onChange={(event: any) => this.props.onSkillChange(event.target.value, index)}
                                     className="skills-input"
-                                    placeholder="Please enter skills" />
+                                    placeholder={this.localize("skillsClosurePlaceHolder")} />
 
                                 <div className="skills-container">
                                     {
                                         teamMember.skillsList.map((value: string, skillIndex) => {
                                             if (value.trim().length > 0) {
-                                                return <Skills
-                                                    index={skillIndex}
-                                                    projectMemberIndex={index}
-                                                    skillContent={value.trim()}
-                                                    showRemoveIcon={true}
-                                                    onRemoveClick={this.props.onSkillRemoveClick} />
+                                                return <Label
+                                                    styles={{ paddingBottom: "1rem" }}
+                                                    circular
+                                                    content={<Text content={value.trim()} title={value.trim()} size="small" />}
+                                                    className={this.state.theme === Resources.dark ? "tags-label-wrapper-dark" : "tags-label-wrapper"}
+                                                    icon={<CloseIcon styles={{ marginBottom:"-0.5rem" }} key={skillIndex}
+                                                        onClick={()=>this.props.onSkillRemoveClick(skillIndex, index)} />}
+                                                />;
                                             }
                                         })
                                     }
@@ -146,22 +128,82 @@ class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseP
                             </>
                     },
                     {
-                        content: <TextArea maxLength={Resources.closeProjectFeedBackMaxLength} onChange={(event: any) => this.props.onDescriptionChange(event.target.value, index)} className="description-textarea" placeholder="Describe in less than 200 words" />, truncateContent: true
+                        content: <TextArea maxLength={Resources.closeProjectFeedBackMaxLength} onChange={(event: any) => this.props.onDescriptionChange(event.target.value, index)} className="description-textarea" placeholder={this.localize("messagePlaceHolder")}/>, truncateContent: true
                     }
                 ],
             }
         ));
 
+        let privateListDataRowsListView = this.props.projectMemberDetails.map((teamMember: ICloseProjectMemberDetails, index: number) => (
+            {
+                key: teamMember.userId,
+                userId: teamMember.userId,
+                header: <></>,
+                content:
+                    <>
+                        <div>
+                            <Text weight="regular" content={this.localize("skillsHeader")} />
+                        </div>
+                        <Flex key={index} gap="gap.smaller" vAlign="start">
+                            <Text className="error-text" key={index} content={teamMember.error} />
+                        </Flex>
+                        <Flex gap="gap.large">
+                            <Input maxLength={Resources.closeProjectAcquiredSkillsMaxLength}
+                                fluid
+                                value={this.props.skillChangeIndex === index ? this.props.inputValue : ""}
+                                onKeyDown={(event: any) => this.props.onSkillKeyDown(event.keyCode, index)}
+                                onChange={(event: any) => this.props.onSkillChange(event.target.value, index)}
+                                className="skills-input"
+                                placeholder="Please enter skills" />
+                        </Flex>
+
+                        <div className="skills-container">
+                            {
+                                teamMember.skillsList.map((value: string, skillIndex) => {
+                                    if (value.trim().length > 0) {
+                                        return <Label
+                                            styles={{ paddingBottom: "1rem" }}
+                                            circular
+                                            content={<Text content={value.trim()} title={value.trim()} size="small" />}
+                                            className={this.state.theme === Resources.dark ? "tags-label-wrapper-dark" : "tags-label-wrapper"}
+                                            icon={<CloseIcon styles={{ marginBottom: "-0.5rem" }} key={skillIndex}
+                                                onClick={() => this.props.onSkillRemoveClick(skillIndex, index)} />}
+                                        />;
+                                    }
+                                })
+                            }
+                        </div>
+
+                        <Flex gap="gap.large" vAlign="center">
+                            <Text weight="regular" content={this.localize("headerFeedback")} />
+                        </Flex>
+
+                        <Flex>
+                            <TextArea maxLength={Resources.closeProjectFeedBackMaxLength} onChange={(event: any) => this.props.onDescriptionChange(event.target.value, index)} className="description-textarea" placeholder="Describe in less than 200 words" />
+                        </Flex>
+                    </>
+            }
+        ));
+
+        let panelsForListItem = this.props.projectMemberDetails.map((memberDetail: ICloseProjectMemberDetails) => (
+            {
+                title: <Text content={memberDetail.name} />,
+                content: <List items={privateListDataRowsListView.filter(row => row.userId === memberDetail.userId)} />
+            }
+        ));
 
         return (
             <>
                 {this.props.memberDetails.projectParticipantsUserIds
-                    ? <Table
+                    ? this.props.screenWidth > 750 && <Table
                         variables={{ cellContentOverflow: 'wrap' }}
                         rows={privateListTableRows}
                         header={privateListTableHeader}
                         className="nonmobile-endorse-skill-list table-cell-content" />
-                    : <Flex className="no-participant-joined"><Text content={this.localize("noParticpantJoinedProject")} /></Flex>}
+                    : this.props.screenWidth > 750 && <Flex className="no-participant-joined"><Text content={this.localize("noParticpantJoinedProject")} /></Flex>
+                }
+
+                {this.props.screenWidth <= 750 && <Accordion defaultActiveIndex={[0]} panels={panelsForListItem} className="list-view-container" />}
             </>
         );
     }

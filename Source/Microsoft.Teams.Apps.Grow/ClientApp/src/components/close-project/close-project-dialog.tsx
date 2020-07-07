@@ -1,17 +1,14 @@
-﻿// <copyright file="close-project-page.tsx" company="Microsoft">
+﻿// <copyright file="close-project-dialog.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
 import { Dialog, Flex, Text, AcceptIcon } from "@fluentui/react-northstar";
-import { Container, Col, Row } from "react-bootstrap";
 import * as microsoftTeams from "@microsoft/teams-js";
 import CloseProjectWrapper from './close-project-wrapper';
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
-import { getBaseUrl } from '../../configVariables';
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import Resources from "../../constants/resources";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../../styles/close-project.css";
 import "../../styles/more-menu-content.css";
@@ -66,7 +63,7 @@ class CloseProjectTable extends React.Component<ICloseProjectTableProps, ICloseP
     * Renders the component
     */
     public render(): JSX.Element {
-        return(<>
+        return (<>
             <Dialog
                 className="dialog-container-close-project"
                 content={

@@ -34,7 +34,7 @@ namespace Microsoft.Teams.Apps.Grow.Models
         /// <summary>
         /// Gets or sets semicolon separated skills selected by user.
         /// </summary>
-        [TeamSkillsValidation(5)]
+        [TeamSkillsValidation(5, 20)]
         public string Skills { get; set; }
 
         /// <summary>

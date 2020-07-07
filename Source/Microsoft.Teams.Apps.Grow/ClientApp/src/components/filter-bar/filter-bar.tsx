@@ -26,19 +26,19 @@ export interface ICheckBoxItem {
 interface IFilterBarProps extends WithTranslation {
     isVisible: boolean;
     sharedByAuthorList: Array<string>;
-    tagsList: Array<string>;
+    skillsList: Array<string>;
     onFilterBarCloseClick: () => void;
     onTypeCheckboxStateChange: (currentValues: Array<ICheckBoxItem>) => void;
     onSharedByCheckboxStateChange: (currentValues: Array<ICheckBoxItem>) => void;
     onSortByStateChange: (selectedValue: string) => void;
     onFilterSearchChange: (searchText: string) => void;
-    onTagsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
+    onSkillsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
 }
 
 interface IFilterBarState {
     typeList: Array<ICheckBoxItem>;
     sharedByList: Array<ICheckBoxItem>;
-    tagsList: Array<ICheckBoxItem>;
+    skillsList: Array<ICheckBoxItem>;
     sortBy: Array<IRadioGroupItem>;
     selectedSortBy: string;
     searchText: string;
@@ -69,7 +69,7 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
             sharedByList: this.props.sharedByAuthorList.map((value: string, index: number) => {
                 return { isChecked: false, key: index, title: value, checkboxLabel: <Text content={value} /> };
             }),
-            tagsList: this.props.tagsList.map((value: string, index: number) => {
+            skillsList: this.props.skillsList.map((value: string, index: number) => {
                 return { isChecked: false, key: index, title: value, checkboxLabel: <Text content={value} /> };
             }),
             sortBy: sortBy,
@@ -98,9 +98,9 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
             })
         }
 
-        if (nextProps.tagsList !== this.props.tagsList) {
+        if (nextProps.skillsList !== this.props.skillsList) {
             this.setState({
-                tagsList: nextProps.tagsList.map((value: string, index: number) => {
+                skillsList: nextProps.skillsList.map((value: string, index: number) => {
                     return { isChecked: false, key: index, title: value, checkboxLabel: <Text content={value} /> };
                 })
             })
@@ -126,12 +126,12 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
     }
 
 	/**
-	*Sets state of 'Tags' filter item when checkbox value changes.
-	*@param tagsValues Array of 'tags' checkboxes with updated user selection
+	*Sets state of 'Skills' filter item when checkbox value changes.
+	*@param skillsValues Array of 'skills' checkboxes with updated user selection
     */
-    onTagsCheckboxStateChange = (tagsValues: Array<ICheckBoxItem>) => {
-        this.setState({ tagsList: tagsValues });
-        this.props.onTagsStateChange(tagsValues);
+    onSkillsCheckboxStateChange = (skillsValues: Array<ICheckBoxItem>) => {
+        this.setState({ skillsList: skillsValues });
+        this.props.onSkillsStateChange(skillsValues);
     }
 
 	/**
@@ -166,9 +166,9 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
             this.setState({ sharedByList: updatedList });
         }
 
-        if (this.state.tagsList.filter((tag: ICheckBoxItem) => { return tag.isChecked }).length) {
-            let updatedList = this.state.tagsList.map((tag: ICheckBoxItem) => { tag.isChecked = false; return tag; });
-            this.setState({ tagsList: updatedList });
+        if (this.state.skillsList.filter((skill: ICheckBoxItem) => { return skill.isChecked }).length) {
+            let updatedList = this.state.skillsList.map((skill: ICheckBoxItem) => { skill.isChecked = false; return skill; });
+            this.setState({ skillsList: updatedList });
         }
 
         if (this.state.typeList.filter((postType: ICheckBoxItem) => { return postType.isChecked }).length) {
@@ -199,7 +199,7 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
                                 <>
                                     <div className="filter-bar-item-container">
                                         <PopupMenuWrapper title={this.localize("type")} showSearchBar={false} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.typeList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onTypeCheckboxStateChange} />
-                                        <PopupMenuWrapper title={this.localize("tagsLabel")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.tagsList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onTagsCheckboxStateChange} />
+                                        <PopupMenuWrapper title={this.localize("tagsLabel")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.skillsList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onSkillsCheckboxStateChange} />
                                         <PopupMenuWrapper title={this.localize("sharedBy")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.sharedByList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onSharedByCheckboxStateChange} />
                                     </div>
                                     <div>
@@ -218,7 +218,7 @@ class FilterBar extends React.Component<IFilterBarProps, IFilterBarState> {
                                 </div>
                                 <Flex className="mobile-filterbar-wrapper">
                                     <PopupMenuWrapper title={this.localize("type")} showSearchBar={false} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.typeList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onTypeCheckboxStateChange} />
-                                    <PopupMenuWrapper title={this.localize("tagsLabel")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.tagsList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onTagsCheckboxStateChange} />
+                                    <PopupMenuWrapper title={this.localize("tagsLabel")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.skillsList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onSkillsCheckboxStateChange} />
                                     <PopupMenuWrapper title={this.localize("sharedBy")} showSearchBar={true} selectedSortBy={this.state.selectedSortBy} checkboxes={this.state.sharedByList} onRadiogroupStateChange={this.onSortByStateChange} onCheckboxStateChange={this.onSharedByCheckboxStateChange} />
                                 </Flex>
                             </Flex>

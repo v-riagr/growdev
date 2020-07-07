@@ -1,12 +1,11 @@
-﻿// <copyright file="add-new-dialog-content.tsx" company="Microsoft">
+﻿// <copyright file="new-project-dialog-content.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Button, Flex, Text, Input, TextArea, ItemLayout, Image, Provider } from "@fluentui/react-northstar";
+import { Button, Flex, Text, Input, TextArea, ItemLayout, Image, Provider, Label } from "@fluentui/react-northstar";
 import { CloseIcon, AddIcon, InfoIcon } from "@fluentui/react-icons-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";
-import Skill from "../close-project/skills";
 import DocumentUrl from "./document-url";
 import StartDateEndDate from "./date-picker";
 import { addNewProjectContent } from "../../api/discover-api";
@@ -16,6 +15,7 @@ import { TFunction } from "i18next";
 import Resources from "../../constants/resources";
 
 import "../../styles/new-project-dialog.css";
+import moment from "moment";
 
 interface INewProjectDialogContentProps extends WithTranslation {
     onSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
@@ -52,7 +52,9 @@ interface INewProjectDialogContentState {
     isTitleExist: boolean;
     isDateValid: boolean;
     isUrlExist: boolean;
-    projectStatus: Array<string>
+    projectStatus: Array<string>;
+    theme: string;
+    screenWidth: number;
 }
 
 class NewProjectDialogContent extends React.Component<INewProjectDialogContentProps, INewProjectDialogContentState> {
@@ -60,10 +62,12 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
     teamId = "";
     constructor(props: any) {
         super(props);
-
+        window.addEventListener("resize", this.update);
         this.localize = this.props.t;
         this.state = {
+            theme: "",
             skillList: [],
+            screenWidth: window.innerWidth,
             documentUrlList: [],
             projectDetails: {
                 supportDocuments: "",
@@ -74,15 +78,14 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                 requiredSkills: "",
                 title: "",
                 teamSize: 0,
-                projectStartDate: "",
-                projectEndDate: "",
+                projectStartDate: moment().toISOString(),
+                projectEndDate: moment().add(1, 'days').toISOString(),
                 status: 1,
                 updatedDate: new Date(),
                 createdByUserId: "",
                 isJoinedByUser: undefined,
                 isRemoved: false,
                 avatarBackgroundColor: "#ffffff",
-                projectParticipantsUserMapping: "",
                 projectParticipantsUserIds: ""
             },
             skill: "",
@@ -110,8 +113,18 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
         microsoftTeams.initialize();
         microsoftTeams.getContext((context: microsoftTeams.Context) => {
             this.teamId = context.teamId!;
+            this.setState({ theme: context.theme! })
         });
     }
+
+    /**
+    * get screen width real time
+    */
+    update = () => {
+        this.setState({
+            screenWidth: window.innerWidth
+        });
+    };
 
 	/**
 	*Close the dialog and pass back card properties to parent component.
@@ -217,8 +230,6 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
 	*@param teamSize team size string
 	*/
     onTeamSizeChange = (teamSize: string) => {
-        //let projectDetails = this.state.projectDetails;
-        //projectDetails.teamSize = parseInt(teamSize);
         this.setState({ teamSizeText: teamSize });
     }
 
@@ -231,15 +242,19 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
     }
 
 	/**
-	*Sets tag state.
-	*@param tag Tag string
+	*Sets skill state.
+	*@param skill skill string
 	*/
     onSkillChange = (skill: string) => {
-        this.setState({ skill: skill })
+        let skillValidation = this.state.skillValidation
+        skillValidation.isMaxSkillSelected = false;
+        this.setState({
+            skillValidation: skillValidation, skill: skill
+        });
     }
 
 	/**
-	*Sets state of tagsList by adding new tag.
+	*Sets state of skillsList by adding new skill.
 	*/
     onSkillAddClick = () => {
         if (this.checkIfSkillIsValid()) {
@@ -333,8 +348,8 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
     }
 
 	/**
-	*Sets state of tagsList by removing tag using its index.
-	*@param index Index of tag to be deleted.
+	*Sets state of skillsList by removing skill using its index.
+	*@param index Index of skill to be deleted.
 	*/
     onSkillRemoveClick = (index: number) => {
         let skills = this.state.skillList;
@@ -348,8 +363,8 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
     }
 
     /**
-	*Sets state of tagsList by removing tag using its index.
-	*@param index Index of tag to be deleted.
+	*Sets state of skillsList by removing skill using its index.
+	*@param index Index of skill to be deleted.
 	*/
     onLinkRemoveClick = (index: number) => {
         let link = this.state.documentUrlList;
@@ -617,7 +632,7 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                 <Flex>
                     <div className="dialog-body">
                         <Flex gap="gap.smaller" className="input-fields-margin-between-add-post">
-                            <Text content={"*" + this.localize("newProjectTitleLabel")} /><InfoIcon className="info-icon" size="small" title={this.localize("newProjectTitleLabel")} />
+                            <Text className="form-label" content={"*" + this.localize("newProjectTitleLabel")} /><InfoIcon outline className="info-icon" size="small" title={this.localize("newProjectTitleLabel")} />
                             <Flex.Item push>
                                 {this.getTitleError()}
                             </Flex.Item>
@@ -629,7 +644,7 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                         </Flex>
 
                         <Flex gap="gap.smaller" className="input-fields-margin-between-add-post">
-                            <Text content={"*" + this.localize("newProjectDescriptionLabel")} /><InfoIcon className="info-icon" size="small" title={this.localize("newProjectDescriptionLabel")} />
+                            <Text className="form-label" content={"*" + this.localize("newProjectDescriptionLabel")} /><InfoIcon outline className="info-icon" size="small" title={this.localize("newProjectDescriptionLabel")} />
                             <Flex.Item push>
                                 {this.getDescriptionError()}
                             </Flex.Item>
@@ -647,38 +662,30 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                         <Flex gap="gap.smaller" className="input-label-space-between date-picker-size-space">
                             <Flex.Item>
                                 {
-                                    !this.state.projectDetails.projectStartDate || !this.state.projectDetails.projectEndDate
-                                        ? <StartDateEndDate
-                                            startDate={new Date()}
-                                            endDate={new Date()}
-                                            getStartDate={this.getStartDate}
-                                            getEndDate={this.getEndDate} />
-                                        : <StartDateEndDate
-                                            startDate={new Date(this.state.projectDetails.projectStartDate)}
-                                            endDate={new Date(this.state.projectDetails.projectEndDate)}
-                                            getStartDate={this.getStartDate}
-                                            getEndDate={this.getEndDate} />
+                                    <StartDateEndDate
+                                        screenWidth={this.state.screenWidth}
+                                        theme={this.state.theme}
+                                        startDate={new Date(this.state.projectDetails.projectStartDate)}
+                                        endDate={new Date(this.state.projectDetails.projectEndDate)}
+                                        getStartDate={this.getStartDate}
+                                        getEndDate={this.getEndDate} />
                                 }
                             </Flex.Item>
                         </Flex>
 
-                        <Flex gap="gap.small">
-                            <div className="edit-project-half-field-teamSize">
-                                <Flex gap="gap.smaller" className="input-fields-margin-between-add-post team-size-error">
-                                    <Text content={"*" + this.localize("teamSizeLabel")} /><InfoIcon className="info-icon" size="small" title={this.localize("teamSizeLabel")} />
-                                    <Flex.Item push>
-                                        {this.getTeamSizeError()}
-                                    </Flex.Item>
-                                </Flex>
-                                <Flex gap="gap.smaller" className="input-label-space-between team-size-space">
-                                    <Flex.Item>
-                                        <Input placeholder={this.localize("teamSizePlaceholder")} fluid value={this.state.teamSizeText} onChange={(event: any) => this.onTeamSizeChange(event.target.value)} />
-                                    </Flex.Item>
-                                </Flex>
-                            </div>
+                        <Flex gap="gap.smaller" className="input-fields-margin-between-add-post team-size-error">
+                            <Text className="form-label" content={"*" + this.localize("teamSizeLabel")} /><InfoIcon className="info-icon" outline size="small" title={this.localize("teamSizePlaceholder")} />
+                            <Flex.Item push>
+                                {this.getTeamSizeError()}
+                            </Flex.Item>
+                        </Flex>
+                        <Flex gap="gap.smaller" className="input-label-space-between team-size-space">
+                            <Flex.Item>
+                                <Input placeholder={this.localize("teamSizePlaceholder")} fluid value={this.state.teamSizeText} onChange={(event: any) => this.onTeamSizeChange(event.target.value)} />
+                            </Flex.Item>
                         </Flex>
                         <Flex gap="gap.smaller" className="input-fields-margin-between-add-post">
-                            <Text content={"*" + this.localize("skillsFormLabel")} /><InfoIcon className="info-icon" size="small" title={this.localize("skillsFormLabel")} />
+                            <Text className="form-label" content={"*" + this.localize("skillsFormLabel")} /><InfoIcon outline className="info-icon" size="small" title={this.localize("skillsFormLabel")} />
                             <Flex.Item push>
                                 <div>
                                     {this.getSkillError()}
@@ -686,32 +693,37 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                             </Flex.Item>
                         </Flex>
                         <Flex gap="gap.smaller" vAlign="center" className="input-label-space-between">
-                            <Input maxLength={Resources.skillMaxLength} placeholder={this.localize("skillsPlaceholder")} fluid value={this.state.skill} onKeyDown={this.onSkillKeyDown} onChange={(event: any) => this.onSkillChange(event.target.value)} />
-                            <Flex.Item push>
-                                <div></div>
+                            <Flex.Item>
+                                <Input maxLength={Resources.skillMaxLength} placeholder={this.localize("skillsPlaceholder")} fluid value={this.state.skill} onKeyDown={this.onSkillKeyDown} onChange={(event: any) => this.onSkillChange(event.target.value)} />
                             </Flex.Item>
-                            <AddIcon key="search" onClick={this.onSkillAddClick} className="add-icon icon-hover" />
+                            <AddIcon key="search" onClick={this.onSkillAddClick} className="add-icon-url icon-hover" />
                         </Flex>
                         <Flex gap="gap.smaller" className="skills-flex skills-new-project" vAlign="center">
                             <div>
                                 {
                                     this.state.skillList.map((value: string, index) => {
                                         if (value.trim().length > 0) {
-                                            return <Skill projectMemberIndex={0} index={index} skillContent={value.trim()} showRemoveIcon={true} onRemoveClick={this.onSkillRemoveClick} />
+                                            return <Label
+                                                styles={{ padding: "1rem" }}
+                                                circular
+                                                content={<Text className="tag-text-form" content={value.trim()} title={value.trim()} size="small" />}
+                                                className={this.state.theme === Resources.dark ? "tags-label-wrapper-dark" : "tags-label-wrapper"}
+                                                icon={<CloseIcon key={index} className="icon-hover" onClick={() => this.onSkillRemoveClick(index)} />}
+                                            />
                                         }
                                     })
                                 }
                             </div>
                         </Flex>
                         <Flex gap="gap.smaller" className="input-fields-margin-between-add-post">
-                            <Text content={this.localize("docLinkFormLabel")} /><InfoIcon className="info-icon" size="small" title={this.localize("docLinkFormLabel")} />
+                            <Text className="form-label" content={this.localize("docLinkFormLabel")} /><InfoIcon outline className="info-icon" size="small" title={this.localize("docLinkFormLabel")} />
                             <Flex.Item push>
                                 {this.getLinkError()}
                             </Flex.Item>
                         </Flex>
                         <Flex gap="gap.smaller" className="input-label-space-between">
                             <Flex.Item>
-                                <Input maxLength={Resources.projectContentUrlMaxLength} onKeyDown={this.onLinkKeyDown} value={this.state.linkText} placeholder={this.localize("docLinkPlaceholder")} fluid onChange={(event: any) => this.onLinkChange(event.target.value)} />
+                                <Input icon={<AddIcon styles={{ display: "none" }} />} maxLength={Resources.projectContentUrlMaxLength} onKeyDown={this.onLinkKeyDown} value={this.state.linkText} placeholder={this.localize("docLinkPlaceholder")} fluid onChange={(event: any) => this.onLinkChange(event.target.value)} />
                             </Flex.Item>
                             <AddIcon key="search" onClick={this.onLinkAddClick} className="add-icon-url icon-hover" />
                         </Flex>
@@ -733,7 +745,7 @@ class NewProjectDialogContent extends React.Component<INewProjectDialogContentPr
                         <Flex.Item push>
                             <Button content={this.localize("reset")} disabled={this.state.isLoading} onClick={this.resetForm} />
                         </Flex.Item>
-                        <Button content={this.localize("Create")} primary loading={this.state.isLoading} disabled={this.state.isLoading} onClick={this.onSubmitClick} />
+                        <Button content={this.localize("create")} primary loading={this.state.isLoading} disabled={this.state.isLoading} onClick={this.onSubmitClick} />
                     </Flex>
                 </Flex>
             </Provider>

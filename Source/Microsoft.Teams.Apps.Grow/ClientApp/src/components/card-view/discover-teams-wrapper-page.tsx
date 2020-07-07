@@ -1,9 +1,9 @@
-﻿// <copyright file="discover-wrapper-page.tsx" company="Microsoft">
+﻿// <copyright file="discover-teams-wrapper-page.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Loader, Flex } from "@fluentui/react-northstar";
+import { Loader} from "@fluentui/react-northstar";
 import Card from "./card";
 import NoPostAddedPage from "./no-post-added-page";
 import FilterNoPostContentPage from "./filter-no-post-content-page";
@@ -11,8 +11,8 @@ import TitleBar from "../filter-bar-teams/title-bar-teams";
 import { Container, Col, Row } from "react-bootstrap";
 import * as microsoftTeams from "@microsoft/teams-js";
 import { IProjectDetails } from "./discover-wrapper-page";
-import { getTeamDiscoverPosts, getFilteredTeamPosts, filterTitleAndTagsTeam } from "../../api/discover-api";
-import { getConfigTags } from "../../api/teams-config-tab-api";
+import { getTeamAllProjects, getFilteredTeamProjects, filterTitleAndSkillsTeam } from "../../api/discover-api";
+import { getConfigSkills } from "../../api/teams-config-tab-api";
 import { generateColor } from "../../helpers/helper";
 import NotificationMessage from "../notification-message/notification-message";
 import { WithTranslation, withTranslation } from "react-i18next";
@@ -57,11 +57,12 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     selectedskills: Array<ICheckBoxItem>;
     selectedSortBy: string;
     filterSearchText: string;
-    allPosts: Array<IProjectDetails>;
+    allProjects: Array<IProjectDetails>;
     loggedInUserObjectId: string;
     loggedInUserName: string;
     teamId: string;
     authorAvatarBackground: Array<any>;
+    hasMoreProjects: boolean;
 
     constructor(props: any) {
         super(props);
@@ -72,11 +73,12 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
         this.selectedskills = [];
         this.selectedSortBy = "";
         this.filterSearchText = "";
-        this.allPosts = [];
+        this.allProjects = [];
         this.loggedInUserObjectId = "";
         this.loggedInUserName= "";
         this.teamId = "";
         this.authorAvatarBackground = colors === null ? [] : JSON.parse(colors!);
+        this.hasMoreProjects = true;
 
         this.state = {
             loader: true,
@@ -109,26 +111,26 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             this.teamId = context.teamId!;
             this.loggedInUserName = context.userPrincipalName!;
             this.loggedInUserObjectId = context.userObjectId!;
-            this.getConfigTags();
+            this.getConfigSkills();
             this.initprojectDetails();
         });
     }
 
     /**
-    * Get tags configured for team
+    * Get skills configured for a team.
     */
-    getConfigTags = async () => {
-        let response = await getConfigTags(this.teamId);
+    getConfigSkills = async () => {
+        let response = await getConfigSkills(this.teamId);
         if (response.status === 200 && response.data) {
-            this.setState({ skillList: response.data.tags });
+            this.setState({ skillList: response.data.skills });
         }
     }
 
     /**
-    * Fetch posts for initializing grid
+    * Fetch projects for initializing grid
     */
     initprojectDetails = async () => {
-        let response = await getTeamDiscoverPosts(this.teamId, 0);
+        let response = await getTeamAllProjects(this.teamId, 0);
         if (response.status === 200 && response.data) {
             this.setState({
                 initialProjects: response.data,
@@ -142,27 +144,28 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     * @param filterEntity Array of selected filter entities.
     */
     private getFilterString(filterEntity: Array<string>) {
-        return filterEntity.length > 1 ? filterEntity.join(";") : filterEntity.length == 1 ? filterEntity.join(";") + ";" : "";
+        return filterEntity.length > 1 ? filterEntity.join(";") : filterEntity.length === 1 ? filterEntity.join(";") + ";" : "";
     }
 
     /**
-    * Get filtered posts based on selected checkboxes.
-    * @param pageCount Page count for which next set of posts needs to be fetched
+    * Get filtered projects based on selected checkboxes.
+    * @param pageCount Page count for which next set of projects needs to be fetched
     */
     getFilteredprojectDetails = async (pageCount: number) => {
         let postprojectStatuss = this.selectedPostprojectStatus.map((postprojectStatus: ICheckBoxItem) => { return postprojectStatus.key.toString().trim() });
         let postprojectStatussString = encodeURI(this.getFilterString(postprojectStatuss));
         let authors = this.selectedSharedBy.map((authors: ICheckBoxItem) => { return authors.title.trim() });
         let authorsString = encodeURI(this.getFilterString(authors));
-        let skills = this.selectedskills.map((tag: ICheckBoxItem) => { return tag.title.trim() });
+        let skills = this.selectedskills.map((skill: ICheckBoxItem) => { return skill.title.trim() });
         let skillsString = encodeURI(this.getFilterString(skills));
 
-        let response = await getFilteredTeamPosts(postprojectStatussString, authorsString, skillsString, this.teamId, pageCount);
+        let response = await getFilteredTeamProjects(postprojectStatussString, authorsString, skillsString, this.teamId, pageCount);
         if (response.status === 200 && response.data) {
             if (response.data.length < 50) {
-                this.setState({
-                    hasMoreProjects: false,
-                });
+                this.hasMoreProjects = false;
+            }
+            else {
+                this.hasMoreProjects = true;
             }
 
             response.data.map((post: IProjectDetails) => {
@@ -185,7 +188,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                     post.isCurrentUserProject = false;
                 }
 
-                this.allPosts.push(post);
+                this.allProjects.push(post);
             });
 
             if (response.data.count !== 0) {
@@ -216,17 +219,18 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     }
 
     /**
-    * Fetch posts for Team tab from API
-    * @param pageCount Page count for which next set of posts needs to be fetched
+    * Fetch projects for Team tab from API
+    * @param pageCount Page count for which next set of projects needs to be fetched
     */
     getprojectDetails = async (pageCount: number) => {
         this.resetAllFilters();
-        let response = await getTeamDiscoverPosts(this.teamId, pageCount);
+        let response = await getTeamAllProjects(this.teamId, pageCount);
         if (response.status === 200 && response.data) {
             if (response.data.length < 50) {
-                this.setState({
-                    hasMoreProjects: false,
-                });
+                this.hasMoreProjects = false;
+            }
+            else {
+                this.hasMoreProjects = true;
             }
             response.data.map((post: IProjectDetails) => {
                 let searchedAuthor = this.authorAvatarBackground.find((author) => author.id === post.createdByUserId);
@@ -248,12 +252,8 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                     post.isCurrentUserProject = false;
                 }
 
-                this.allPosts.push(post);
+                this.allProjects.push(post);
             });
-
-            this.setState({
-                projectDetails: this.allPosts
-            })
 
             if (response.data.count === 0) {
                 this.setState({
@@ -297,7 +297,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     */
     handleDeleteButtonClick = (projectId: string, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.isRemoved = true;
                 }
@@ -317,7 +317,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     */
     handleLeaveButtonClick = (projectId: string, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.isRemoved = true;
                 }
@@ -331,29 +331,10 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     }
 
     /**
-    *Deletes selected blog post
-    *@param isSuccess Boolean indication whether operation succeeded
-    *@param message Message to be displayed in notification
+    *Invoked by Infinite scroll component when user scrolls down to fetch next set of projects
+    *@param pageCount Page count for which next set of projects needs to be fetched
     */
-    handleUserPrivatePostButtonClick = async (isSuccess: boolean, message?: string) => {
-        if (isSuccess) {
-            this.showAlert(this.localize("addPostToPrivateListSuccess"), 1);
-        }
-        else {
-            if (message) {
-                this.showAlert(message, 2);
-            }
-            else {
-                this.showAlert(this.localize("addPrivatePostError"), 2);
-            }
-        }
-    }
-
-    /**
-    *Invoked by Infinite scroll component when user scrolls down to fetch next set of posts
-    *@param pageCount Page count for which next set of posts needs to be fetched
-    */
-    loadMorePosts = (pageCount: number) => {
+    loadMoreProjects = (pageCount: number) => {
         if (!this.filterSearchText.trim().length) {
             if (this.state.searchText.trim().length) {
                 this.searchFilterPostUsingAPI(pageCount);
@@ -384,7 +365,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                 projectDetails: [],
                 hasMoreProjects: true
             });
-            this.allPosts = [];
+            this.allProjects = [];
         }
     }
 
@@ -394,13 +375,14 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     searchFilterPostUsingAPI = async (pageCount: number) => {
         this.resetAllFilters();
         if (this.state.searchText.trim().length) {
-            let response = await filterTitleAndTagsTeam(this.state.searchText, this.teamId, pageCount);
+            let response = await filterTitleAndSkillsTeam(this.state.searchText, this.teamId, pageCount);
 
             if (response.status === 200 && response.data) {
                 if (response.data.length < 50) {
-                    this.setState({
-                        hasMoreProjects: false,
-                    });
+                    this.hasMoreProjects = false;
+                }
+                else {
+                    this.hasMoreProjects = true;
                 }
                 response.data.map((post: IProjectDetails) => {
                     let searchedAuthor = this.authorAvatarBackground.find((author) => author.id === post.createdByUserId);
@@ -422,7 +404,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                         post.isCurrentUserProject = false;
                     }
 
-                    this.allPosts.push(post)
+                    this.allProjects.push(post)
                 });
 
                 this.setState({ isPageInitialLoad: false });
@@ -448,7 +430,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -466,7 +448,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -484,7 +466,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -502,26 +484,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
-    }
-
-    /**
-    * Invoked when user clicks on vote icon. Updates state and showing notification alert.
-    * @param isSuccess Boolean indicating whether edit operation is successful.
-    * @param isLiked Boolean indicating whether post is liked or not.
-    */
-    onVoteClick = (isSuccess: boolean, isLiked: boolean) => {
-        if (isSuccess) {
-            if (isLiked) {
-                this.showAlert(this.localize("voteSuccess"), 1)
-            }
-            else {
-                this.showAlert(this.localize("voteUnliked"), 1)
-            }
-        }
-        else {
-            this.showAlert(this.localize("voteError"), 2)
-        }
+        this.allProjects = [];
     }
 
     /**
@@ -531,14 +494,13 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     */
     onCardUpdate = (cardDetails: IProjectDetails, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === cardDetails.projectId) {
                     post.description = cardDetails.description;
                     post.title = cardDetails.title;
                     post.requiredSkills = cardDetails.requiredSkills;
                     post.status = cardDetails.status;
                     post.projectParticipantsUserIds = cardDetails.projectParticipantsUserIds;
-                    post.projectParticipantsUserMapping = cardDetails.projectParticipantsUserMapping;
                     post.projectEndDate = cardDetails.projectEndDate;
                     post.projectStartDate = cardDetails.projectStartDate;
                     post.teamSize = cardDetails.teamSize;
@@ -583,7 +545,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             }
             submittedPost.unshift(getSubmittedPost);
             this.setState({ projectDetails: submittedPost, initialProjects: submittedPost });
-            this.allPosts = this.state.projectDetails;
+            this.allProjects = this.state.projectDetails;
             this.showAlert(this.localize("addNewPostSuccess"), 1)
         }
         else {
@@ -592,18 +554,21 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
     }
 
     /**
-    * Filters posts inline by user search text
+    * Filters projects inline by user search text
     * @param searchText Search text entered by user.
     */
     onFilterSearchTextChange = (searchText: string) => {
         this.filterSearchText = searchText;
         if (searchText.trim().length) {
-            let filteredPosts = this.allPosts.filter((post: IProjectDetails) => post.title.toLowerCase().includes(searchText.toLowerCase()) === true);
-
-            this.setState({ projectDetails: filteredPosts });
+            let filteredPosts = this.allProjects.filter((post: IProjectDetails) => post.title.toLowerCase().includes(searchText.toLowerCase()) === true);
+            this.setState({
+                projectDetails: filteredPosts, loader: false, hasMoreProjects: this.hasMoreProjects, isPageInitialLoad: false
+            });
         }
         else {
-            this.setState({ projectDetails: [...this.allPosts] });
+            this.setState({
+                projectDetails: [...this.allProjects], loader: false, hasMoreProjects: this.hasMoreProjects, isPageInitialLoad: false
+            });
         }
     }
 
@@ -621,7 +586,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                 searchText: "",
                 hasMoreProjects: true
             });
-            this.allPosts = [];
+            this.allProjects = [];
         }
         this.setState({
             isFilterApplied: isOpen
@@ -641,7 +606,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             isFilterApplied: false,
             hasMoreProjects: true
         });
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     hideFilterbar = () => {
@@ -650,7 +615,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
 
     handleCloseProjectButtonClick = (isSuccess: boolean, projectId: string) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.status = 4;
                 }
@@ -665,22 +630,20 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
 
     onProjectJoin = (projectId: string, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     if (post.projectParticipantsUserIds === "") {
                         post.projectParticipantsUserIds = post.projectParticipantsUserIds + this.loggedInUserObjectId;
-                        post.projectParticipantsUserMapping = post.projectParticipantsUserMapping + this.loggedInUserObjectId + ":" + this.loggedInUserName;
                     }
                     else {
                         post.projectParticipantsUserIds = post.projectParticipantsUserIds + ";" + this.loggedInUserObjectId;
-                        post.projectParticipantsUserMapping = post.projectParticipantsUserMapping + ";" + this.loggedInUserObjectId + ":" + this.loggedInUserName;
                     }
                 }
 
             });
 
             this.setState({
-                projectDetails: this.allPosts
+                projectDetails: this.allProjects
             })
             this.onFilterSearchTextChange(this.filterSearchText);
             this.showAlert(this.localize("projectJoinedSuccess"), 1)
@@ -723,7 +686,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
             this.state.projectDetails!.map((value: IProjectDetails, index) => {
                 if (!value.isRemoved) {
                     cards.push(<Col lg={3} sm={6} md={4} className="grid-column d-flex justify-content-center">
-                        <Card loggedInUserId={this.loggedInUserObjectId} projectDetails={this.state.projectDetails} onJoinMenuItemClick={this.onProjectJoin} onCloseProjectButtonClick={this.handleCloseProjectButtonClick} onLeaveButtonClick={this.handleLeaveButtonClick} showLeaveProjects={false} showJoinProjectMenu={true} onAddPrivatePostClick={this.handleUserPrivatePostButtonClick} index={index} cardDetails={value} onVoteClick={this.onVoteClick} onCardUpdate={this.onCardUpdate} onDeleteButtonClick={this.handleDeleteButtonClick} />
+                        <Card loggedInUserId={this.loggedInUserObjectId} projectDetails={this.state.projectDetails} onJoinMenuItemClick={this.onProjectJoin} onCloseProjectButtonClick={this.handleCloseProjectButtonClick} onLeaveButtonClick={this.handleLeaveButtonClick} showLeaveProjects={false} showJoinProjectMenu={true} index={index} cardDetails={value} onCardUpdate={this.onCardUpdate} onDeleteButtonClick={this.handleDeleteButtonClick} />
                     </Col>)
                 }
             });
@@ -733,7 +696,7 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                     <div className="container-div">
                         <div className="container-subdiv">
                             <NotificationMessage onClose={this.hideAlert} showAlert={this.state.showAlert} content={this.state.alertMessage} notificationType={this.state.alertprojectStatus} />
-                            <NoPostAddedPage onNewPostSubmit={this.onNewPost} />
+                            <NoPostAddedPage showAddPost={false} onNewPostSubmit={this.onNewPost} />
                         </div>
                     </div>
                 )
@@ -754,21 +717,21 @@ class DiscoverWrapperPage extends React.Component<WithTranslation, ICardViewStat
                                 showFilter={true}
                                 teamId={this.teamId}
                                 commandBarSearchText={this.state.searchText}
-                                searchFilterPostsUsingAPI={this.invokeApiSearch}
+                                searchFilterProjectsUsingAPI={this.invokeApiSearch}
                                 onFilterClear={this.handleFilterClear}
                                 hideFilterbar={!this.state.isFilterApplied}
                                 onSortByChange={this.onSortByChange}
                                 onFilterSearchChange={this.onFilterSearchTextChange}
                                 onSearchInputChange={this.handleSearchInputChange}
-                                onNewPostSubmit={this.onNewPost}
+                                onNewProjectSubmit={this.onNewPost}
                                 onSharedByCheckboxStateChange={this.onSharedByCheckboxStateChange}
                                 onTypeCheckboxStateChange={this.onprojectStatusCheckboxStateChange}
-                                onTagsStateChange={this.onskillsStateChange}
+                                onSkilsStateChange={this.onskillsStateChange}
                             />
                             <div key={this.state.infiniteScrollParentKey} className="scroll-view scroll-view-mobile" style={scrollViewStyle}>
                                 <InfiniteScroll
                                     pageStart={this.state.pageLoadStart}
-                                    loadMore={this.loadMorePosts}
+                                    loadMore={this.loadMoreProjects}
                                     hasMore={this.state.hasMoreProjects && !this.filterSearchText.trim().length}
                                     initialLoad={this.state.isPageInitialLoad}
                                     useWindow={false}

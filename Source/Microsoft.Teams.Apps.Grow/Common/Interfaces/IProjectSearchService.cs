@@ -35,7 +35,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Interfaces
         /// Creates Index, Data Source and Indexer for search service.
         /// </summary>
         /// <returns>A task that represents the work queued to execute.</returns>
-        Task RecreateSearchServiceIndexAsync();
+        Task CreateSearchServiceIndexAsync();
 
         /// <summary>
         /// Run the indexer on demand.

@@ -39,11 +39,6 @@ namespace Microsoft.Teams.Apps.Grow.Models
         public DateTime CreatedDate { get; set; }
 
         /// <summary>
-        /// Gets or sets name of participant who joined the project.
-        /// </summary>
-        public string CreatedByName { get; set; }
-
-        /// <summary>
         /// Gets or sets semicolon separated list of acquired skills by participant.
         /// </summary>
         [Required]

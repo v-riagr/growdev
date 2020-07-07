@@ -15,7 +15,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Providers
     using Microsoft.WindowsAzure.Storage.Table;
 
     /// <summary>
-    /// Implements storage provider which helps to create, get, update or delete team skills data in storage.
+    /// Implements storage provider which helps to create, get, update or delete team skills data in Azure table storage.
     /// </summary>
     public class TeamSkillStorageProvider : BaseStorageProvider, ITeamSkillStorageProvider
     {

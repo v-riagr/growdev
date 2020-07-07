@@ -16,7 +16,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Providers
     using Microsoft.WindowsAzure.Storage.Table;
 
     /// <summary>
-    /// Implements storage provider which stores projects data in storage.
+    /// Implements storage provider which stores projects data in Azure table storage.
     /// </summary>
     public class ProjectStorageProvider : BaseStorageProvider, IProjectStorageProvider
     {
@@ -133,6 +133,20 @@ namespace Microsoft.Teams.Apps.Grow.Common.Providers
         public async Task<bool> UpsertProjectAsync(ProjectEntity projectEntity)
         {
             var result = await this.StoreOrUpdateEntityAsync(projectEntity);
+            return result.HttpStatusCode == (int)HttpStatusCode.NoContent;
+        }
+
+        /// <summary>
+        /// Updates project data in storage.
+        /// </summary>
+        /// <param name="projectEntity">Holds project data.</param>
+        /// <returns>A task that represents project data is updated.</returns>
+        public async Task<bool> UpdateProjectAsync(ProjectEntity projectEntity)
+        {
+            await this.EnsureInitializedAsync();
+            TableOperation addOrUpdateOperation = TableOperation.Replace(projectEntity);
+            var result = await this.CloudTable.ExecuteAsync(addOrUpdateOperation);
+
             return result.HttpStatusCode == (int)HttpStatusCode.NoContent;
         }
 

@@ -3,14 +3,12 @@
 // </copyright>
 
 import * as React from "react";
-import { Loader, Flex } from "@fluentui/react-northstar";
+import { Loader } from "@fluentui/react-northstar";
 import Card from "../card-view/card";
-import NoPostAddedPage from "../card-view/no-post-added-page";
 import FilterNoPostContentPage from "../card-view/filter-no-post-content-page";
-import TitleBar from "../filter-bar/title-bar";
 import { Container, Col, Row } from "react-bootstrap";
 import * as microsoftTeams from "@microsoft/teams-js";
-import { getMyCreatedProjects, getFilteredPosts, filterTitleAndTags } from "../../api/discover-api";
+import { getMyCreatedProjects } from "../../api/discover-api";
 import { generateColor } from "../../helpers/helper";
 import NotificationMessage from "../notification-message/notification-message";
 import { WithTranslation, withTranslation } from "react-i18next";
@@ -54,7 +52,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     selectedskills: Array<ICheckBoxItem>;
     selectedSortBy: string;
     filterSearchText: string;
-    allPosts: Array<IProjectDetails>;
+    allProjects: Array<IProjectDetails>;
     loggedInUserObjectId: string;
     teamId: string;
     authorAvatarBackground: Array<any>;
@@ -68,7 +66,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
         this.selectedskills = [];
         this.selectedSortBy = "";
         this.filterSearchText = "";
-        this.allPosts = [];
+        this.allProjects = [];
         this.loggedInUserObjectId = "";
         this.teamId = "";
         this.authorAvatarBackground = colors === null ? [] : JSON.parse(colors!);
@@ -103,16 +101,8 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     }
 
     /**
-    * Get comma separated selected filter entities string.
-    * @param filterEntity Array of selected filter entities.
-    */
-    private getFilterString(filterEntity: Array<string>) {
-        return filterEntity.length > 1 ? filterEntity.join(";") : filterEntity.length == 1 ? filterEntity.join(";") + ";" : "";
-    }
-
-    /**
-    * Get filtered posts based on selected checkboxes.
-    * @param pageCount Page count for which next set of posts needs to be fetched
+    * Get filtered projects based on selected checkboxes.
+    * @param pageCount Page count for which next set of projects needs to be fetched
     */
     getMyProjects = async (pageCount: number) => {
         let hasMoreProjects = this.state.hasMoreProjects;
@@ -145,7 +135,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
                     post.isCurrentUserProject = false;
                 }
 
-                this.allPosts.push(post);
+                this.allProjects.push(post);
             });
 
             if (response.data.count !== 0) {
@@ -154,7 +144,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
                 });
             }
             this.setState({
-                projectDetails: this.allPosts,
+                projectDetails: this.allProjects,
                 hasMoreProjects: hasMoreProjects,
                 loader:false
             });
@@ -199,7 +189,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     */
     handleDeleteButtonClick = (projectId: string, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.isRemoved = true;
                 }
@@ -214,29 +204,10 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     }
 
     /**
-    *Deletes selected blog post
-    *@param isSuccess Boolean indication whether operation succeeded
-    *@param message Message to be displayed in notification
+    *Invoked by Infinite scroll component when user scrolls down to fetch next set of projects
+    *@param pageCount Page count for which next set of projects needs to be fetched
     */
-    handleUserPrivatePostButtonClick = async (isSuccess: boolean, message?: string) => {
-        if (isSuccess) {
-            this.showAlert(this.localize("addPostToPrivateListSuccess"), 1);
-        }
-        else {
-            if (message) {
-                this.showAlert(message, 2);
-            }
-            else {
-                this.showAlert(this.localize("addPrivatePostError"), 2);
-            }
-        }
-    }
-
-    /**
-    *Invoked by Infinite scroll component when user scrolls down to fetch next set of posts
-    *@param pageCount Page count for which next set of posts needs to be fetched
-    */
-    loadMorePosts = (pageCount: number) => {
+    loadMoreProjects = (pageCount: number) => {
         this.getMyProjects(pageCount);
     }
 
@@ -257,7 +228,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
                 projectDetails: [],
                 hasMoreProjects: true
             });
-            this.allPosts = [];
+            this.allProjects = [];
         }
     }
 
@@ -276,7 +247,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -294,7 +265,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -312,7 +283,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     /**
@@ -330,26 +301,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             hasMoreProjects: true
         });
 
-        this.allPosts = [];
-    }
-
-    /**
-    * Invoked when user clicks on vote icon. Updates state and showing notification alert.
-    * @param isSuccess Boolean indicating whether edit operation is successful.
-    * @param isLiked Boolean indicating whether post is liked or not.
-    */
-    onVoteClick = (isSuccess: boolean, isLiked: boolean) => {
-        if (isSuccess) {
-            if (isLiked) {
-                this.showAlert(this.localize("voteSuccess"), 1)
-            }
-            else {
-                this.showAlert(this.localize("voteUnliked"), 1)
-            }
-        }
-        else {
-            this.showAlert(this.localize("voteError"), 2)
-        }
+        this.allProjects = [];
     }
 
     /**
@@ -359,7 +311,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     */
     onCardUpdate = (cardDetails: IProjectDetails, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === cardDetails.projectId) {
                     post.description = cardDetails.description;
                     post.title = cardDetails.title;
@@ -378,18 +330,18 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
     }
 
     /**
-    * Filters posts inline by user search text
+    * Filters projects inline by user search text
     * @param searchText Search text entered by user.
     */
     onFilterSearchTextChange = (searchText: string) => {
         this.filterSearchText = searchText;
         if (searchText.trim().length) {
-            let filteredPosts = this.allPosts.filter((post: IProjectDetails) => post.title.toLowerCase().includes(searchText.toLowerCase()) === true);
+            let filteredProjects = this.allProjects.filter((post: IProjectDetails) => post.title.toLowerCase().includes(searchText.toLowerCase()) === true);
 
-            this.setState({ projectDetails: filteredPosts });
+            this.setState({ projectDetails: filteredProjects });
         }
         else {
-            this.setState({ projectDetails: [...this.allPosts] });
+            this.setState({ projectDetails: [...this.allProjects] });
         }
     }
 
@@ -407,7 +359,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
                 searchText: "",
                 hasMoreProjects: true
             });
-            this.allPosts = [];
+            this.allProjects = [];
         }
         this.setState({
             isFilterApplied: isOpen
@@ -427,7 +379,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             isFilterApplied: false,
             hasMoreProjects: true
         });
-        this.allPosts = [];
+        this.allProjects = [];
     }
 
     hideFilterbar = () => {
@@ -436,7 +388,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
 
     onProjectJoin = (projectId: string, isSuccess: boolean) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.projectParticipantsUserIds = post.projectParticipantsUserIds + ";" + this.loggedInUserObjectId;
                 }
@@ -463,7 +415,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
 
     handleCloseProjectButtonClick = (isSuccess: boolean, projectId: string) => {
         if (isSuccess) {
-            this.allPosts.map((post: IProjectDetails) => {
+            this.allProjects.map((post: IProjectDetails) => {
                 if (post.projectId === projectId) {
                     post.status = 4;
                 }
@@ -498,7 +450,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
             this.state.projectDetails!.map((value: IProjectDetails, index) => {
                 if (!value.isRemoved) {
                     cards.push(<Col lg={3} sm={6} md={4} className="grid-column d-flex justify-content-center">
-                        <Card loggedInUserId={this.loggedInUserObjectId} projectDetails={this.state.projectDetails} onJoinMenuItemClick={this.onProjectJoin} onCloseProjectButtonClick={this.handleCloseProjectButtonClick} onLeaveButtonClick={this.handleDeleteButtonClick} showLeaveProjects={false} showJoinProjectMenu={false} onAddPrivatePostClick={this.handleUserPrivatePostButtonClick} index={index} cardDetails={value} onVoteClick={this.onVoteClick} onCardUpdate={this.onCardUpdate} onDeleteButtonClick={this.handleDeleteButtonClick} />
+                        <Card loggedInUserId={this.loggedInUserObjectId} projectDetails={this.state.projectDetails} onJoinMenuItemClick={this.onProjectJoin} onCloseProjectButtonClick={this.handleCloseProjectButtonClick} onLeaveButtonClick={this.handleDeleteButtonClick} showLeaveProjects={false} showJoinProjectMenu={false} index={index} cardDetails={value} onCardUpdate={this.onCardUpdate} onDeleteButtonClick={this.handleDeleteButtonClick} />
                     </Col>)
                 }
             });
@@ -517,7 +469,7 @@ class MyCreatedProjects extends React.Component<ICardViewStateProps, ICardViewSt
                             <div key={this.state.infiniteScrollParentKey} className="scroll-view scroll-view-mobile" style={scrollViewStyle}>
                                 <InfiniteScroll
                                     pageStart={this.state.pageLoadStart}
-                                    loadMore={this.loadMorePosts}
+                                    loadMore={this.loadMoreProjects}
                                     hasMore={this.state.hasMoreProjects && !this.filterSearchText.trim().length}
                                     initialLoad={this.state.isPageInitialLoad}
                                     useWindow={false}

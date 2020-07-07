@@ -41,7 +41,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Interfaces
         /// <param name="projects">Project entities.</param>
         /// <param name="searchText">Search text for skills.</param>
         /// <returns>Represents a collection of unique skills.</returns>
-        public IEnumerable<string> GetUniqueSkills(IEnumerable<ProjectEntity> projects, string searchText);
+        IEnumerable<string> GetUniqueSkills(IEnumerable<ProjectEntity> projects, string searchText);
 
         /// <summary>
         /// Get filtered projects joined by a user.
@@ -50,5 +50,13 @@ namespace Microsoft.Teams.Apps.Grow.Common.Interfaces
         /// <param name="userAadObjectId">Azure Active Directory id of user.</param>
         /// <returns>Represents user joined projects.</returns>
         IEnumerable<ProjectEntity> GetFilteredProjectsJoinedByUser(IEnumerable<ProjectEntity> projects, string userAadObjectId);
+
+        /// <summary>
+        /// Escaping unsafe and reserved characters from Azure Search Service search query.
+        /// https://docs.microsoft.com/en-us/azure/search/query-lucene-syntax#escaping-special-characters
+        /// </summary>
+        /// <param name="query">Query which the user had typed in search field.</param>
+        /// <returns>Returns string escaping unsafe and reserved characters.</returns>
+        string EscapeCharactersInQuery(string query);
     }
 }

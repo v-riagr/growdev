@@ -11,11 +11,16 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     using Microsoft.ApplicationInsights;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.CodeAnalysis;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy;
     using Microsoft.Teams.Apps.Grow.Common;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
+    using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
+    using Microsoft.Teams.Apps.Grow.Models.Configuration;
 
     /// <summary>
     /// Controller to handle project API operations.
@@ -53,13 +58,19 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         /// <param name="projectHelper">Helper for creating models and filtering projects as per criteria.</param>
         /// <param name="projectSearchService">Project search service for fetching project with search criteria and filters.</param>
         /// <param name="teamSkillStorageProvider">Provides methods for team skills operations from database.</param>
+        /// <param name="tokenAcquisitionHelper">Provides </param>
+        /// <param name="azureAdOptions">Instance of IOptions to read data from application configuration.</param>
+        /// <param name="confidentialClientApp">Instance of ConfidentialClientApplication class.</param>
         public TeamProjectController(
             ILogger<ProjectController> logger,
             TelemetryClient telemetryClient,
             IProjectHelper projectHelper,
             IProjectSearchService projectSearchService,
-            ITeamSkillStorageProvider teamSkillStorageProvider)
-            : base(telemetryClient)
+            ITeamSkillStorageProvider teamSkillStorageProvider,
+            IOptions<AzureActiveDirectorySettings> azureAdOptions,
+            TokenAcquisitionHelper tokenAcquisitionHelper,
+            IConfidentialClientApplication confidentialClientApp)
+            : base(telemetryClient, azureAdOptions, tokenAcquisitionHelper, confidentialClientApp, logger)
         {
             this.logger = logger;
             this.projectHelper = projectHelper;
@@ -68,7 +79,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         }
 
         /// <summary>
-        /// Get filtered projects for particular team as per the configured skills.
+        /// Get filtered projects for particular team as per the configured skills, if user is a part of team.
         /// </summary>
         /// <param name="teamId">Team id for which data will fetch.</param>
         /// <param name="pageCount">Page number to get search data.</param>
@@ -87,8 +98,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid parameter value for pageCount.");
-                return this.BadRequest("Invalid parameter value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.FilteredTeamPostsAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -120,20 +131,22 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 }
                 else
                 {
-                    this.logger.LogInformation($"Tags are not configured for team {teamId}.");
+                    this.RecordEvent($"Skills are not configured for team {teamId}.");
+                    this.logger.LogInformation($"Skills are not configured for team {teamId}.");
                 }
 
                 return this.Ok(new List<ProjectEntity>());
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while fetching projects for team {teamId}.");
                 this.logger.LogError(ex, $"Error while fetching projects for team {teamId}.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Get projects as per the applied filters.
+        /// Get projects as per the applied filters, if user is a part of team.
         /// </summary>
         /// <param name="status">Semicolon separated status of projects like Not started/Active/Blocked/Closed.</param>
         /// <param name="projectOwnerNames">Semicolon separated project owner names to filter the projects.</param>
@@ -149,8 +162,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid argument value for pageCount.");
-                return this.BadRequest("Invalid argument value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.AppliedFiltersProjectsAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             if (string.IsNullOrEmpty(teamId))
@@ -171,16 +184,16 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                     return this.NotFound($"Skills are not configured for team {teamId}.");
                 }
 
-                // If none of tags are selected for filtering, assign all configured tags for team to get posts which are intended for team.
+                // If none of skills are selected for filtering, assign all configured skills for team to get projects which are intended for team.
                 if (string.IsNullOrEmpty(skills))
                 {
                     skills = teamSkillEntity.Skills;
                 }
                 else
                 {
-                    var savedTags = teamSkillEntity.Skills.Split(";");
-                    var tagsList = skills.Split(';').Intersect(savedTags);
-                    skills = string.Join(';', tagsList);
+                    var savedSkills = teamSkillEntity.Skills.Split(";");
+                    var skillsList = skills.Split(';').Intersect(savedSkills);
+                    skills = string.Join(';', skillsList);
                 }
 
                 // If no skills selected for filtering then get projects irrespective of skills.
@@ -201,13 +214,14 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "Error while fetching filtered projects for team.");
+                this.RecordEvent($"Error while fetching filtered projects for team {teamId}.");
+                this.logger.LogError(ex, $"Error while fetching filtered projects for team {teamId}.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Get list of projects as per the configured skills in a team and Title/Description/Skills search text.
+        /// Get list of projects as per the configured skills in a team and Title/Description/Skills search text, if user is a part of team.
         /// </summary>
         /// <param name="searchText">Search text represents the Title/Description/Skills field of projects.</param>
         /// <param name="teamId">Team Id for which projects needs to be fetched.</param>
@@ -227,8 +241,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
             if (pageCount < 0)
             {
-                this.logger.LogError("Invalid argument value for pageCount.");
-                return this.BadRequest("Invalid argument value for pageCount.");
+                this.logger.LogError($"{nameof(pageCount)} is found to be less than zero during {nameof(this.TeamSearchProjectsAsync)} call.");
+                return this.BadRequest($"Parameter {nameof(pageCount)} cannot be less than zero.");
             }
 
             var skipRecords = pageCount * Constants.LazyLoadPerPageProjectCount;
@@ -244,6 +258,12 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 }
 
                 var skillsQuery = this.projectHelper.CreateSkillsQuery(teamSkillEntity.Skills);
+
+                if (!string.IsNullOrWhiteSpace(skillsQuery))
+                {
+                    skillsQuery = this.projectHelper.EscapeCharactersInQuery(skillsQuery);
+                }
+
                 var filterQuery = $"search.ismatch('{skillsQuery}', 'RequiredSkills')";
 
                 var projects = await this.projectSearchService.GetProjectsAsync(
@@ -260,13 +280,14 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent($"Error while getting projects as per search text for team {teamId}.");
                 this.logger.LogError(ex, $"Error while getting projects as per search text for team {teamId}.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Get unique owner names as per configured skills in a team.
+        /// Get unique owner names as per configured skills in a team, if user is a part of team.
         /// </summary>
         /// <param name="teamId">Team id to get the configured skills for a team.</param>
         /// <returns>Returns unique user names.</returns>
@@ -301,10 +322,10 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
                 if (projects != null)
                 {
                     projectOwnerNames = projects
-                        .GroupBy(projects => projects.CreatedByUserId)
+                        .GroupBy(projectDetail => projectDetail.CreatedByUserId)
                         .OrderByDescending(groupedProject => groupedProject.Count())
                         .Take(50)
-                        .Select(projects => projects.First().CreatedByName)
+                        .Select(projectDetail => projectDetail.First().CreatedByName)
                         .OrderBy(createdByName => createdByName).ToList();
 
                     this.RecordEvent("Team Project unique owner names - HTTP Get call succeeded.");
@@ -314,6 +335,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to get unique project owner names.");
                 this.logger.LogError(ex, "Error while making call to get unique project owner names.");
                 throw;
             }

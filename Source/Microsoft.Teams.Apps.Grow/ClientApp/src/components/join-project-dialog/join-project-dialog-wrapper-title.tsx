@@ -2,9 +2,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
-
 import * as React from "react";
-import { Dialog, Button, Text, AddIcon, Flex } from "@fluentui/react-northstar";
+import { Dialog, Text } from "@fluentui/react-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";
 import JoinProjectContentDialog from "./join-project-dialog-content";
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
@@ -12,33 +11,25 @@ import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 import Resources from "../../constants/resources";
 
-
 import "../../styles/join-project-dialog.css";
-
 
 interface IJoinProjectDialogProps extends WithTranslation {
     index: number;
     onSubmit: (projectId: string, isSuccess: boolean) => void;
     cardDetails: IProjectDetails;
     onCancel: () => void;
-
-
 }
-
 
 interface IJoinProjectDialogState {
     editDialogOpen: boolean;
     theme: string;
 }
 
-
 class JoinProjectDialogTitle extends React.Component<IJoinProjectDialogProps, IJoinProjectDialogState> {
     localize: TFunction;
     loggedInUserId: string;
     constructor(props: any) {
         super(props);
-
-
         this.localize = this.props.t;
         this.loggedInUserId = "";
         this.state = {
@@ -47,14 +38,12 @@ class JoinProjectDialogTitle extends React.Component<IJoinProjectDialogProps, IJ
         }
     }
 
-
     componentDidMount() {
         microsoftTeams.initialize();
         microsoftTeams.getContext((context: microsoftTeams.Context) => {
             this.loggedInUserId = context.userObjectId!;
         });
     }
-
 
     /**
     *Changes dialog open state to show and hide dialog.
@@ -64,12 +53,10 @@ class JoinProjectDialogTitle extends React.Component<IJoinProjectDialogProps, IJ
         this.setState({ editDialogOpen: isOpen })
     }
 
-
     /**
     * Renders the component
     */
     public render(): JSX.Element {
-        let className = this.state.theme === Resources.dark ? "dark-menu-items-wrapper" : this.state.theme === Resources.contrast ? "contrast-menu-items-wrapper" : "default-menu-items-wrapper";
         return (
             <Dialog
                 className="join-project-dialog-container"

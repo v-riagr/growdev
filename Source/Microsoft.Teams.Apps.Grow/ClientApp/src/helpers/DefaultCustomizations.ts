@@ -1,4 +1,8 @@
-﻿import { createTheme, ICustomizations } from 'office-ui-fabric-react';
+﻿// <copyright file="DefaultCustomizations.ts" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import { createTheme, ICustomizations } from 'office-ui-fabric-react';
 import { addVariants } from '@uifabric/variants';
 
 export const DefaultCustomizations: ICustomizations = {

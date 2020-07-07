@@ -4,6 +4,7 @@
 
 namespace Microsoft.Teams.Apps.Grow
 {
+    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
@@ -16,6 +17,7 @@ namespace Microsoft.Teams.Apps.Grow
     using Microsoft.Bot.Connector.Authentication;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Bot;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
     using Microsoft.Teams.Apps.Grow.Common.Providers;
@@ -32,7 +34,7 @@ namespace Microsoft.Teams.Apps.Grow
         /// <summary>
         /// Azure Search service index name for project.
         /// </summary>
-        private const string ProjectIndexName = "project-index";
+        private const string ProjectIndexName = "grow-project-index";
 
         /// <summary>
         /// Adds application configuration settings to specified IServiceCollection.
@@ -46,19 +48,21 @@ namespace Microsoft.Teams.Apps.Grow
 
             services.Configure<BotSettings>(options =>
             {
-                options.SecurityKey = configuration.GetValue<string>("App:SecurityKey");
                 options.AppBaseUri = appBaseUrl;
                 options.TenantId = configuration.GetValue<string>("App:TenantId");
-                options.MedianFirstRetryDelay = configuration.GetValue<double>("RetryPolicy:medianFirstRetryDelay");
                 options.RetryCount = configuration.GetValue<int>("RetryPolicy:retryCount");
                 options.ManifestId = configuration.GetValue<string>("App:ManifestId");
-                options.CacheInterval = configuration.GetValue<double>("App:CacheInterval");
+                options.CacheDurationInMinutes = configuration.GetValue<double>("App:CacheDurationInMinutes");
             });
 
             services.Configure<AzureActiveDirectorySettings>(options =>
             {
                 options.TenantId = configuration.GetValue<string>("AzureAd:TenantId");
                 options.ClientId = configuration.GetValue<string>("AzureAd:ClientId");
+                options.ClientSecret = configuration.GetValue<string>("AzureAd:ClientSecret");
+                options.GraphScope = configuration.GetValue<string>("AzureAd:GraphScope");
+                options.ApplicationIdUri = configuration.GetValue<string>("AzureAd:ApplicationIdURI");
+                options.ValidIssuers = configuration.GetValue<string>("AzureAd:ValidIssuers");
             });
 
             services.Configure<TelemetrySetting>(options =>
@@ -101,7 +105,9 @@ namespace Microsoft.Teams.Apps.Grow
             services.AddSingleton<ITeamSkillHelper, TeamSkillHelper>();
             services.AddSingleton<ITeamSkillStorageProvider, TeamSkillStorageProvider>();
             services.AddSingleton<NotificationHelper>();
+            services.AddSingleton<TokenAcquisitionHelper>();
             services.AddSingleton<ITeamStorageProvider, TeamStorageProvider>();
+            services.AddSingleton<ITeamsInfoHelper, TeamsInfoHelper>();
 
             // services.AddHostedService<TeamPostDataRefreshService>();
 #pragma warning disable CA2000 // Disposing it in Search Service.
@@ -110,6 +116,21 @@ namespace Microsoft.Teams.Apps.Grow
 #pragma warning disable CA2000 // Disposing it in Search Service.
             services.AddSingleton<ISearchIndexClient>(new SearchIndexClient(configuration.GetValue<string>("SearchService:SearchServiceName"), ProjectIndexName, new SearchCredentials(configuration.GetValue<string>("SearchService:SearchServiceQueryApiKey"))));
 #pragma warning restore CA2000 // Disposing it in Search Service.
+        }
+
+        /// <summary>
+        /// Add confidential credential provider to access api.
+        /// </summary>
+        /// <param name="services">Collection of services.</param>
+        /// <param name="configuration">Application configuration properties.</param>
+        public static void AddConfidentialCredentialProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+            IConfidentialClientApplication confidentialClientApp = ConfidentialClientApplicationBuilder.Create(configuration["AzureAd:ClientId"])
+                .WithClientSecret(configuration["AzureAd:ClientSecret"])
+                .Build();
+            services.AddSingleton<IConfidentialClientApplication>(confidentialClientApp);
         }
 
         /// <summary>

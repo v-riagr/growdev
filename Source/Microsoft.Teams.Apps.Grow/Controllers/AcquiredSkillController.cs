@@ -13,8 +13,12 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.CodeAnalysis;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
+    using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
+    using Microsoft.Teams.Apps.Grow.Models.Configuration;
 
     /// <summary>
     /// Controller to handle acquired skills API operations.
@@ -40,11 +44,17 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         /// <param name="logger">Logs errors and information.</param>
         /// <param name="telemetryClient">The Application Insights telemetry client.</param>
         /// <param name="acquiredSkillStorageProvider">Acquired skill storage provider dependency injection.</param>
+        /// <param name="tokenAcquisitionHelper">Provides </param>
+        /// <param name="azureAdOptions">Instance of IOptions to read data from application configuration.</param>
+        /// <param name="confidentialClientApp">Instance of ConfidentialClientApplication class.</param>
         public AcquiredSkillController(
             ILogger<AcquiredSkillController> logger,
             TelemetryClient telemetryClient,
-            IAcquiredSkillStorageProvider acquiredSkillStorageProvider)
-            : base(telemetryClient)
+            IAcquiredSkillStorageProvider acquiredSkillStorageProvider,
+            IOptions<AzureActiveDirectorySettings> azureAdOptions,
+            TokenAcquisitionHelper tokenAcquisitionHelper,
+            IConfidentialClientApplication confidentialClientApp)
+            : base(telemetryClient, azureAdOptions, tokenAcquisitionHelper, confidentialClientApp, logger)
         {
             this.logger = logger;
             this.acquiredSkillStorageProvider = acquiredSkillStorageProvider;
@@ -52,7 +62,7 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
         /// <summary>
         /// Get call to retrieve list of user acquired skills.
-        /// User will be able to view the skills acquired for all the projects that he/she have worked on and marked the status as closed.
+        /// User will be able to view the skills acquired for all the projects with status as closed.
         /// </summary>
         /// <returns>List of joined projects which are in closed state.</returns>
         [HttpGet("acquired-skills")]

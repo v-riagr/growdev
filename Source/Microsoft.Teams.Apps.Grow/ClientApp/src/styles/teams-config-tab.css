@@ -48,7 +48,7 @@
 
 .config-container {
     margin-left: 0.1%;
-    height:15rem;
+    height: 15rem;
 }
 
 .tag-list-box-config {
@@ -78,7 +78,7 @@
 }
 
 .search-div {
-    width: 90%;
+    width: 100%;
     margin-top: 0.3rem;
 }
 
@@ -87,10 +87,10 @@
     background-color: #F3F2F1;
 }
 
-.input-search-config {
+/*.input-search-config {
     width: 53.5rem;
     background-color: #F3F2F1;
-}
+}*/
 
 .tags-flex-preferences {
     padding-left: 0rem;
@@ -112,16 +112,16 @@
     text-align: center;
 }
 
-.config-teams-tab-note{
-    margin-top:15rem;
+.config-teams-tab-note {
+    margin-top: 15rem;
 }
 
 .dialog-container-div-config {
     height: 41.2rem;
-    overflow:hidden;
+    overflow: hidden;
 }
 
-.ts-tab-configuration-footerMessage{
-    height:1.5rem !important;
-    margin-top:0.2rem !important;
+.ts-tab-configuration-footerMessage {
+    height: 1.5rem !important;
+    margin-top: 0.2rem !important;
 }

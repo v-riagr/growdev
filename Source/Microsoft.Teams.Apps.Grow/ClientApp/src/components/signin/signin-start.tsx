@@ -1,4 +1,8 @@
-﻿import React, { useEffect } from "react";
+﻿// <copyright file="signin-start.tsx" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import React, { useEffect } from "react";
 import * as microsoftTeams from "@microsoft/teams-js";
 import { getAuthenticationConsentMetadata } from '../../api/authentication-metadata-api';
 

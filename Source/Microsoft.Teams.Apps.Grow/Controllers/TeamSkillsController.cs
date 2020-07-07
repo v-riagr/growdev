@@ -10,9 +10,13 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Identity.Client;
     using Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy;
     using Microsoft.Teams.Apps.Grow.Common.Interfaces;
+    using Microsoft.Teams.Apps.Grow.Helpers;
     using Microsoft.Teams.Apps.Grow.Models;
+    using Microsoft.Teams.Apps.Grow.Models.Configuration;
 
     /// <summary>
     /// Controller to handle team skills API operations.
@@ -38,18 +42,24 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
         /// <param name="logger">Logs errors and information.</param>
         /// <param name="telemetryClient">The Application Insights telemetry client.</param>
         /// <param name="teamSkillStorageProvider">Team skill storage provider dependency injection.</param>
+        /// <param name="tokenAcquisitionHelper">Provides </param>
+        /// <param name="azureAdOptions">Instance of IOptions to read data from application configuration.</param>
+        /// <param name="confidentialClientApp">Instance of ConfidentialClientApplication class.</param>
         public TeamSkillsController(
             ILogger<TeamSkillsController> logger,
             TelemetryClient telemetryClient,
-            ITeamSkillStorageProvider teamSkillStorageProvider)
-            : base(telemetryClient)
+            ITeamSkillStorageProvider teamSkillStorageProvider,
+            IOptions<AzureActiveDirectorySettings> azureAdOptions,
+            TokenAcquisitionHelper tokenAcquisitionHelper,
+            IConfidentialClientApplication confidentialClientApp)
+            : base(telemetryClient, azureAdOptions, tokenAcquisitionHelper, confidentialClientApp, logger)
         {
             this.logger = logger;
             this.teamSkillStorageProvider = teamSkillStorageProvider;
         }
 
         /// <summary>
-        /// Get call to retrieve team skills data.
+        /// Get call to retrieve team skills data, if user is a part of team.
         /// </summary>
         /// <param name="teamId">Team Id - unique value for each Team where skills has configured.</param>
         /// <returns>Represents Team skill entity model.</returns>
@@ -79,13 +89,14 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to get team skills.");
                 this.logger.LogError(ex, "Error while making call to get team skills.");
                 throw;
             }
         }
 
         /// <summary>
-        /// Post call to store team skill details.
+        /// Post call to store team skill details, if user is a part of team.
         /// </summary>
         /// <param name="teamSkillDetails">Holds team skill detail entity data.</param>
         /// <returns>Returns true for successful operation.</returns>
@@ -103,15 +114,29 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
 
                 this.logger.LogInformation("Call to add team skill details.");
 
-                var teamSkill = new TeamSkillEntity
-                {
-                    TeamId = teamSkillDetails.TeamId,
-                    Skills = teamSkillDetails.Skills,
-                    CreatedByUserId = this.UserAadId,
-                    UpdatedByUserId = this.UserAadId,
-                };
+                var teamSkillData = await this.teamSkillStorageProvider.GetTeamSkillsDataAsync(teamSkillDetails.TeamId);
+                bool result;
 
-                var result = await this.teamSkillStorageProvider.UpsertTeamSkillsAsync(teamSkill);
+                if (teamSkillData == null)
+                {
+                    // Insert or update the skills details for a team.
+                    var teamSkill = new TeamSkillEntity
+                    {
+                        TeamId = teamSkillDetails.TeamId,
+                        Skills = teamSkillDetails.Skills,
+                        CreatedByUserId = this.UserAadId,
+                        UpdatedByUserId = this.UserAadId,
+                    };
+
+                    result = await this.teamSkillStorageProvider.UpsertTeamSkillsAsync(teamSkill);
+                }
+                else
+                {
+                    teamSkillData.Skills = teamSkillDetails.Skills;
+                    teamSkillData.UpdatedByUserId = this.UserAadId;
+
+                    result = await this.teamSkillStorageProvider.UpsertTeamSkillsAsync(teamSkillData);
+                }
 
                 if (result)
                 {
@@ -125,46 +150,8 @@ namespace Microsoft.Teams.Apps.Grow.Controllers
             }
             catch (Exception ex)
             {
+                this.RecordEvent("Error while making call to store team skills.");
                 this.logger.LogError(ex, "Error while making call to store team skills.");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Get list of configured skills for a team to show on filter bar dropdown list.
-        /// </summary>
-        /// <param name="teamId">Team id to get the configured skills for a team.</param>
-        /// <returns>List of configured skills.</returns>
-        [HttpGet("configured-skills")]
-        public async Task<IActionResult> ConfiguredSkillsAsync(string teamId)
-        {
-            try
-            {
-                this.logger.LogInformation("Call to get list of configured skills for a team.");
-
-                if (string.IsNullOrEmpty(teamId))
-                {
-                    this.logger.LogError("Team Id is either null or empty.");
-                    return this.BadRequest(new { message = "Team Id is either null or empty." });
-                }
-
-                var teamSkillDetail = await this.teamSkillStorageProvider.GetTeamSkillsDataAsync(teamId);
-
-                if (teamSkillDetail != null)
-                {
-                    this.RecordEvent("Team skills - HTTP Get call succeeded");
-                    return this.Ok(teamSkillDetail.Skills?.Split(";"));
-                }
-                else
-                {
-                    this.logger.LogInformation($"No skills configured for team {teamId}.");
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "Error while fetching configured skills for team.");
                 throw;
             }
         }

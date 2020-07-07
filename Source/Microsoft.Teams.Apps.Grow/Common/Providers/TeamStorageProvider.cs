@@ -15,7 +15,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.Providers
     using Microsoft.WindowsAzure.Storage.Table;
 
     /// <summary>
-    /// Grow storage provider.
+    /// Grow Azure table storage provider.
     /// </summary>
     public class TeamStorageProvider : BaseStorageProvider, ITeamStorageProvider
     {

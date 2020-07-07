@@ -6,7 +6,7 @@ import * as React from "react";
 import FilterBar from "./filter-bar";
 import CommandBar from "./command-bar";
 import { ICheckBoxItem } from "./filter-bar"
-import { getAuthors, getTags } from "../../api/discover-api";
+import { getProjectOwners, getSkills } from "../../api/discover-api";
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
 
 interface IFilterBarProps {
@@ -16,8 +16,8 @@ interface IFilterBarProps {
     onSortByChange: (selectedValue: string) => void;
     onNewPostSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
     onFilterSearchChange: (searchText: string) => void;
-    onTagsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
-    searchFilterPostsUsingAPI: () => void;
+    onSkillsStateChange: (currentValues: Array<ICheckBoxItem>) => void;
+    searchFilterProjectsUsingAPI: () => void;
     onFilterClear: (isFilterOpened: boolean) => void;
     commandBarSearchText: string;
     hideFilterbar: boolean;
@@ -29,7 +29,7 @@ interface IFilterBarProps {
 interface IFilterBarState {
     isOpen: boolean;
     sharedByAuthorList: Array<string>;
-    tagsList: Array<string>;
+    skillsList: Array<string>;
     showSolidFilter: boolean;
 }
 
@@ -40,14 +40,14 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
         this.state = {
             isOpen: false,
             sharedByAuthorList: [],
-            tagsList: [],
+            skillsList: [],
             showSolidFilter: false
         }
     }
 
     componentDidMount() {
         this.getAuthors();
-        this.getTags();
+        this.getSkills();
     }
 
     componentWillReceiveProps(nextProps: IFilterBarProps) {
@@ -55,7 +55,7 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
             if (nextProps.hideFilterbar === true) {
                 this.setState({ isOpen: false });
                 this.getAuthors();
-                this.getTags();
+                this.getSkills();
             }
         }
     }
@@ -64,7 +64,7 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
     * Fetch list of authors from API
     */
     getAuthors = async () => {
-        let response = await getAuthors();
+        let response = await getProjectOwners();
         if (response.status === 200 && response.data) {
             this.setState({
                 sharedByAuthorList: response.data.map((author: string) => { return author.trim() })
@@ -73,13 +73,13 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
     }
 
 	/**
-    * Fetch list of tags from API
+    * Fetch list of skills from API.
     */
-    getTags = async () => {
-        let response = await getTags();
+    getSkills = async () => {
+        let response = await getSkills();
         if (response.status === 200 && response.data) {
             this.setState({
-                tagsList: response.data
+                skillsList: response.data
             });
         }
     }
@@ -103,14 +103,14 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
                     projectDetails={this.props.projectDetails}
                     showFilter={this.props.showFilter}
                     onFilterButtonClick={this.onOpenStateChange}
-                    onNewPostSubmit={this.props.onNewPostSubmit}
+                    onNewProjectSubmit={this.props.onNewPostSubmit}
                     onSearchInputChange={this.props.onSearchInputChange}
                     showSolidFilterIcon={this.state.showSolidFilter}
-                    searchFilterPostsUsingAPI={this.props.searchFilterPostsUsingAPI}
+                    searchFilterProjectsUsingAPI={this.props.searchFilterProjectsUsingAPI}
                     commandBarSearchText={this.props.commandBarSearchText}
                 />
                 <FilterBar
-                    tagsList={this.state.tagsList}
+                    skillsList={this.state.skillsList}
                     onFilterSearchChange={this.props.onFilterSearchChange}
                     onSortByStateChange={this.props.onSortByChange}
                     sharedByAuthorList={this.state.sharedByAuthorList}
@@ -118,7 +118,7 @@ class TitleBar extends React.Component<IFilterBarProps, IFilterBarState> {
                     onFilterBarCloseClick={this.onOpenStateChange}
                     onSharedByCheckboxStateChange={this.props.onSharedByCheckboxStateChange}
                     onTypeCheckboxStateChange={this.props.onTypeCheckboxStateChange}
-                    onTagsStateChange={this.props.onTagsStateChange} />
+                    onSkillsStateChange={this.props.onSkillsStateChange} />
             </>
         )
     }

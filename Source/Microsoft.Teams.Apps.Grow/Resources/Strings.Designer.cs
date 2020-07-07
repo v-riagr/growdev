@@ -61,7 +61,7 @@ namespace Microsoft.Teams.Apps.Grow {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Grow Your Skills.
+        ///   Looks up a localized string similar to Active.
         /// </summary>
         public static string ActiveStatusType {
             get {
@@ -138,7 +138,16 @@ namespace Microsoft.Teams.Apps.Grow {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Congratulations!.
+        ///   Looks up a localized string similar to Closed.
+        /// </summary>
+        public static string ClosedStatusType {
+            get {
+                return ResourceManager.GetString("ClosedStatusType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Project team update.
         /// </summary>
         public static string CongratulationsMessage {
             get {
@@ -174,6 +183,15 @@ namespace Microsoft.Teams.Apps.Grow {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Go to skills.
+        /// </summary>
+        public static string GoToSkillsCardButton {
+            get {
+                return ResourceManager.GetString("GoToSkillsCardButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Want to join a different project?.
         /// </summary>
         public static string joinProjectAfterDelete {
@@ -182,15 +200,6 @@ namespace Microsoft.Teams.Apps.Grow {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Go to skills.
-        /// </summary>
-        public static string GoToSkillsCardButton {
-            get {
-                return ResourceManager.GetString("GoToSkillsCardButton", resourceCulture);
-            }
-        }
-                
         /// <summary>
         ///   Looks up a localized string similar to View details.
         /// </summary>
@@ -224,6 +233,15 @@ namespace Microsoft.Teams.Apps.Grow {
         public static string NotificationListCardViewMoreButtonText {
             get {
                 return ResourceManager.GetString("NotificationListCardViewMoreButtonText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not started.
+        /// </summary>
+        public static string NotStartedStatusType {
+            get {
+                return ResourceManager.GetString("NotStartedStatusType", resourceCulture);
             }
         }
         
@@ -332,6 +350,15 @@ namespace Microsoft.Teams.Apps.Grow {
         public static string SorryMessage {
             get {
                 return ResourceManager.GetString("SorryMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Status.
+        /// </summary>
+        public static string StatusLabel {
+            get {
+                return ResourceManager.GetString("StatusLabel", resourceCulture);
             }
         }
         

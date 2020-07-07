@@ -5,12 +5,12 @@
 namespace Microsoft.Teams.Apps.Grow.Models.Configuration
 {
     /// <summary>
-    /// Class which will help to provide Microsoft Azure Table storage settings.
+    /// Class which will help to provide Microsoft Azure storage settings.
     /// </summary>
     public class StorageSetting : BotSettings
     {
         /// <summary>
-        /// Gets or sets Microsoft Azure Table storage connection string.
+        /// Gets or sets Microsoft Azure storage connection string.
         /// </summary>
         public string ConnectionString { get; set; }
     }

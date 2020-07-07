@@ -1,10 +1,10 @@
-﻿// <copyright file="no-tag-found.tsx" company="Microsoft">
+﻿// <copyright file="user-avatar.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
 import { WithTranslation, withTranslation } from "react-i18next";
-import { Text, Avatar, Flex } from "@fluentui/react-northstar";
+import { Text, Flex } from "@fluentui/react-northstar";
 import { TFunction } from "i18next";
 import { generateColor, getInitials } from "../../helpers/helper";
 

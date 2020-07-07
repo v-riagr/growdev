@@ -36,15 +36,24 @@
         width: 11.8rem;
     }
 
+.document-url-join-dialog {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+}
 .joined-project-text-area {
     height: auto;
     width: 100%;
+    font-size: 12px;
     overflow-wrap: break-word;
 }
 
-.project-title{
-    font-weight:700;
-    overflow-wrap:anywhere !important;
+.project-title {
+    font-weight: 700;
+    font-size: 18px;
+    overflow-wrap: anywhere !important;
 }
 
 .add-icon {
@@ -73,12 +82,12 @@
 
 .join-project-dialog-container {
     width: 60rem !important;
-    height: 50rem !important;
+    height: 60rem !important;
 }
 
 .join-project-dialog-body {
     padding: 0.5rem !important;
-    height: 36rem !important;
+    height: 44rem !important;
     overflow: auto !important;
     width: 100%;
 }
@@ -138,5 +147,10 @@ joined-project-half-field {
 
     .join-project-dialog-provider-wrapper {
         height: 95vh;
+    }
+
+    .highlight-menu {
+        color: #6264A7;
+        font-weight:700;
     }
 }

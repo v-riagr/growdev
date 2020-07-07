@@ -5,7 +5,7 @@
 import { IPostType } from "../constants/resources";
 import Resources from "../constants/resources";
 import { TFunction } from "i18next";
-import { getPreferencesTags } from "../api/preferences-api";
+
 /**
 * Get localized post types.
 * @param localize i18n TFunction recieved from props.
@@ -69,19 +69,4 @@ export const getInitials = (userPostName : string) => {
         initials += names[names.length - 1].substring(0, 1).toUpperCase();
     }
     return initials;
-}
-
-/**
-* Get all the saved tags which user selected previously
-*/
-export const getTags = async (teamId: string) => {
-    let response = await getPreferencesTags(teamId);
-    let result: any;
-    if (response.status === 200 && response.data) {
-        result = {
-            tags: response.data.tags.split(";"),
-            Frequency: response.data.digestFrequency
-        }
-        return result;
-    }
 }

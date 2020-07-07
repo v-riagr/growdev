@@ -1,7 +1,11 @@
-﻿import * as React from "react";
+﻿// <copyright file="date-picker.tsx" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import * as React from "react";
 import moment from "moment";
-import { Divider, Flex } from '@fluentui/react-northstar';
-import { useEffect, useState } from "react";
+import { Flex } from '@fluentui/react-northstar';
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatePicker } from 'office-ui-fabric-react/lib/DatePicker';
 import { Fabric, Customizer } from 'office-ui-fabric-react/lib';
@@ -16,24 +20,38 @@ interface IDateePickerProps {
     startDate: Date;
     endDate: Date;
     getStartDate: (startDate: Date) => void,
-    getEndDate: (endDate: Date) => void
+    getEndDate: (endDate: Date) => void,
+    theme: string
+    screenWidth: number
 }
 const controlClass = mergeStyleSets({
     control: {
         margin: '0 0 15px 0',
-        maxWidth: '300px'
+        width: '25rem'
+    }
+});
+const mobileControlClass = mergeStyleSets({
+    control: {
+        margin: '0 0 15px 0',
+        width: '45vw'
     }
 });
 const StartDateEndDate: React.FC<IDateePickerProps> = props => {
-
-    let search = window.location.search;
-    let params = new URLSearchParams(search);
-    let theme = params.get("theme");
-
+    let bgcolor = "";
+    let theme = props.theme;
     let datePickerTheme;
-    if (theme === Constants.dark) { datePickerTheme = DarkCustomizations }
-    else if (theme === Constants.contrast) { datePickerTheme = DarkCustomizations }
-    else { datePickerTheme = DefaultCustomizations }
+    if (theme === Constants.dark) {
+        bgcolor = "dark-datepicker";
+        datePickerTheme = DarkCustomizations
+    }
+    else if (theme === Constants.contrast) {
+        bgcolor = "dark-datepicker";
+        datePickerTheme = DarkCustomizations
+    }
+    else {
+        bgcolor = "default-datepicker";
+        datePickerTheme = DefaultCustomizations
+    }
 
     const { t } = useTranslation();
     const [startDate, setStartDate] = useState<Date | null | undefined>(props.startDate);
@@ -91,48 +109,98 @@ const StartDateEndDate: React.FC<IDateePickerProps> = props => {
 
     return (
         <>
-            <div>
-                <Flex gap="gap.small">
-                    <Flex.Item size="size.half">
-                        <div>
-                            <Fabric>
-                                <Customizer {...datePickerTheme}>
-                                    <DatePicker
-                                        className="date-picker"
-                                        label={t('*Start date')}
-                                        allowTextInput={true}
-                                        showMonthPickerAsOverlay={true}
-                                        minDate={new Date()}
-                                        isMonthPickerVisible={true}
-                                        value={startDate!}
-                                        onSelectDate={onSelectStartDate}
-                                        parseDateFromString={onParseDateFromString}
-                                    />
-                                </Customizer>
-                            </Fabric>
-                        </div>
-                    </Flex.Item>
-                    <Flex.Item size="size.half">
-                        <div>
-                            <Fabric>
-                                <Customizer {...datePickerTheme}>
-                                    <DatePicker
-                                        className={controlClass.control}
-                                        label={t('*End date')}
-                                        allowTextInput={true}
-                                        minDate={minEndDate}
-                                        isMonthPickerVisible={true}
-                                        showMonthPickerAsOverlay={true}
-                                        value={endDate!}
-                                        onSelectDate={onSelectEndDate}
-                                        parseDateFromString={onParseDateFromString}
-                                    />
-                                </Customizer>
-                            </Fabric>
-                        </div>
-                    </Flex.Item>
-                </Flex>
-            </div>
+            {
+                props.screenWidth > 599 && 
+                <div>
+                    <Flex gap="gap.small">
+                        <Flex.Item size="size.half">
+                            <div>
+                                <Fabric>
+                                    <Customizer {...datePickerTheme}>
+                                        <DatePicker
+                                            className={bgcolor + " date-picker-style"}
+                                            label={t('projectStartDate')}
+                                            allowTextInput={true}
+                                            showMonthPickerAsOverlay={true}
+                                            minDate={new Date()}
+                                            isMonthPickerVisible={true}
+                                            value={startDate!}
+                                            onSelectDate={onSelectStartDate}
+                                            parseDateFromString={onParseDateFromString}
+                                        />
+                                    </Customizer>
+                                </Fabric>
+                            </div>
+                        </Flex.Item>
+                        <Flex.Item size="size.half">
+                            <div>
+                                <Fabric>
+                                    <Customizer {...datePickerTheme}>
+                                        <DatePicker
+                                            className={bgcolor + " date-picker-style"}
+                                            label={t('projectEndDate')}
+                                            allowTextInput={true}
+                                            minDate={minEndDate}
+                                            isMonthPickerVisible={true}
+                                            showMonthPickerAsOverlay={true}
+                                            value={endDate!}
+                                            onSelectDate={onSelectEndDate}
+                                            parseDateFromString={onParseDateFromString}
+                                        />
+                                    </Customizer>
+                                </Fabric>
+                            </div>
+                        </Flex.Item>
+                    </Flex>
+                </div>
+            }
+
+            {
+                props.screenWidth <= 599 &&
+                <div>
+                    <Flex gap="gap.small">
+                        <Flex.Item size="size.half">
+                            <div>
+                                <Fabric>
+                                    <Customizer {...datePickerTheme}>
+                                        <DatePicker
+                                            className={bgcolor + " date-picker-style-for-small-device"}
+                                            label={t('projectStartDate')}
+                                            allowTextInput={true}
+                                            showMonthPickerAsOverlay={true}
+                                            minDate={new Date()}
+                                            isMonthPickerVisible={true}
+                                            value={startDate!}
+                                            onSelectDate={onSelectStartDate}
+                                            parseDateFromString={onParseDateFromString}
+                                        />
+                                    </Customizer>
+                                </Fabric>
+                            </div>
+                        </Flex.Item>
+                        <Flex.Item size="size.half">
+                            <div>
+                                <Fabric>
+                                    <Customizer {...datePickerTheme}>
+                                        <DatePicker
+                                            className={bgcolor + " date-picker-style-for-small-device"}
+                                            label={t('projectEndDate')}
+                                            allowTextInput={true}
+                                            minDate={minEndDate}
+                                            isMonthPickerVisible={true}
+                                            showMonthPickerAsOverlay={true}
+                                            value={endDate!}
+                                            onSelectDate={onSelectEndDate}
+                                            parseDateFromString={onParseDateFromString}
+                                        />
+                                    </Customizer>
+                                </Fabric>
+                            </div>
+                        </Flex.Item>
+                    </Flex>
+                </div>
+            }
+            
         </>
 
     );

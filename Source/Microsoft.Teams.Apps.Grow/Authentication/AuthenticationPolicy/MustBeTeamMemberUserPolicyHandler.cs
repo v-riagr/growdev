@@ -8,17 +8,10 @@ namespace Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc.Filters;
-    using Microsoft.Bot.Builder;
-    using Microsoft.Bot.Builder.Integration.AspNet.Core;
-    using Microsoft.Bot.Builder.Teams;
-    using Microsoft.Bot.Connector.Authentication;
-    using Microsoft.Bot.Schema;
-    using Microsoft.Bot.Schema.Teams;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Options;
     using Microsoft.Teams.Apps.Grow.Common;
@@ -34,16 +27,6 @@ namespace Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy
     public class MustBeTeamMemberUserPolicyHandler : AuthorizationHandler<MustBeTeamMemberUserPolicyRequirement>
     {
         /// <summary>
-        /// Microsoft application credentials.
-        /// </summary>
-        private readonly MicrosoftAppCredentials microsoftAppCredentials;
-
-        /// <summary>
-        /// Bot adapter.
-        /// </summary>
-        private readonly IBotFrameworkHttpAdapter botAdapter;
-
-        /// <summary>
         /// Cache for storing authorization result.
         /// </summary>
         private readonly IMemoryCache memoryCache;
@@ -54,30 +37,24 @@ namespace Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy
         private readonly IOptions<BotSettings> botOptions;
 
         /// <summary>
-        /// Provider for fetching information about team details from storage table.
+        /// Provider to fetch team details from bot adapter.
         /// </summary>
-        private readonly ITeamStorageProvider teamStorageProvider;
+        private readonly ITeamsInfoHelper teamsInfoHelper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MustBeTeamMemberUserPolicyHandler"/> class.
         /// </summary>
         /// <param name="memoryCache">MemoryCache instance for caching authorization result.</param>
-        /// <param name="botAdapter">Bot adapter for getting team members.</param>
-        /// <param name="microsoftAppCredentials">Microsoft application credentials.</param>
         /// <param name="botOptions">A set of key/value application configuration properties for activity handler.</param>
-        /// <param name="teamStorageProvider">Provider for fetching information about team details from storage table.</param>
+        /// <param name="teamsInfoHelper">Provider to fetch team details from bot adapter.</param>
         public MustBeTeamMemberUserPolicyHandler(
             IMemoryCache memoryCache,
-            IBotFrameworkHttpAdapter botAdapter,
-            MicrosoftAppCredentials microsoftAppCredentials,
             IOptions<BotSettings> botOptions,
-            ITeamStorageProvider teamStorageProvider)
+            ITeamsInfoHelper teamsInfoHelper)
         {
             this.memoryCache = memoryCache;
-            this.botAdapter = botAdapter;
-            this.microsoftAppCredentials = microsoftAppCredentials;
             this.botOptions = botOptions ?? throw new ArgumentNullException(nameof(botOptions));
-            this.teamStorageProvider = teamStorageProvider;
+            this.teamsInfoHelper = teamsInfoHelper;
         }
 
         /// <summary>
@@ -104,11 +81,13 @@ namespace Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy
                 {
                     // Read the request body, parse out the activity object, and set the parsed culture information.
                     var streamReader = new StreamReader(authorizationFilterContext.HttpContext.Request.Body, Encoding.UTF8, true, 1024, leaveOpen: true);
-                    using var jsonReader = new JsonTextReader(streamReader);
-                    var obj = JObject.Load(jsonReader);
-                    var teamEntity = obj.ToObject<TeamEntity>();
-                    authorizationFilterContext.HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
-                    teamId = teamEntity.TeamId;
+                    using (var jsonReader = new JsonTextReader(streamReader))
+                    {
+                        var obj = JObject.Load(jsonReader);
+                        var teamEntity = obj.ToObject<TeamEntity>();
+                        authorizationFilterContext.HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
+                        teamId = teamEntity.TeamId;
+                    }
                 }
                 else
                 {
@@ -124,51 +103,31 @@ namespace Microsoft.Teams.Apps.Grow.Authentication.AuthenticationPolicy
         }
 
         /// <summary>
-        /// Check if a user has admin access in a certain team.
+        /// Check if a user is a member of a certain team.
         /// </summary>
         /// <param name="teamId">The team id that the validator uses to check if the user is a member of the team. </param>
         /// <param name="userAadObjectId">The user's Azure Active Directory object id.</param>
         /// <returns>The flag indicates that the user is a part of certain team or not.</returns>
         private async Task<bool> ValidateUserIsPartOfTeamAsync(string teamId, string userAadObjectId)
         {
-            var teamInfo = await this.teamStorageProvider.GetTeamDetailAsync(teamId);
-
-            if (teamInfo == null)
-            {
-                return false;
-            }
-
             // The key is generated by combining teamId and user object id.
-            // Team members details will be provided from cache, if available.
-            // Cache value will refresh on configured interval.
-            this.memoryCache.TryGetValue(this.GetCacheKey(teamId, userAadObjectId), out bool isUserValid);
-
-            if (isUserValid == false)
+            bool isCacheEntryExists = this.memoryCache.TryGetValue(this.GetCacheKey(teamId, userAadObjectId), out bool isUserValidMember);
+            if (!isCacheEntryExists)
             {
-                TeamsChannelAccount teamMember = new TeamsChannelAccount();
-
-                var conversationReference = new ConversationReference
-                {
-                    ChannelId = Constants.TeamsBotFrameworkChannelId,
-                    ServiceUrl = teamInfo.ServiceUrl,
-                };
-
-                await ((BotFrameworkAdapter)this.botAdapter).ContinueConversationAsync(
-                    this.microsoftAppCredentials.MicrosoftAppId,
-                    conversationReference,
-                    async (context, token) =>
-                    {
-                        teamMember = await TeamsInfo.GetTeamMemberAsync(context, userAadObjectId, teamId, CancellationToken.None);
-                    }, default);
-
-                var isValid = teamMember != null;
-                this.memoryCache.Set(this.GetCacheKey(teamId, userAadObjectId), isValid, TimeSpan.FromMinutes(this.botOptions.Value.CacheInterval));
-                return isValid;
+                var teamMember = await this.teamsInfoHelper.GetTeamMemberAsync(teamId, userAadObjectId);
+                isUserValidMember = teamMember != null;
+                this.memoryCache.Set(this.GetCacheKey(teamId, userAadObjectId), isUserValidMember, TimeSpan.FromMinutes(this.botOptions.Value.CacheDurationInMinutes));
             }
 
-            return isUserValid;
+            return isUserValidMember;
         }
 
+        /// <summary>
+        /// // Generate key by combining teamId and user object id.
+        /// </summary>
+        /// <param name="teamId">The team id that the validator uses to check if the user is a member of the team. </param>
+        /// <param name="userAadObjectId">The user's Azure Active Directory object id.</param>
+        /// <returns>Generated key.</returns>
         private string GetCacheKey(string teamId, string userAadObjectId)
         {
             return CacheKeysConstants.TeamMember + teamId + userAadObjectId;

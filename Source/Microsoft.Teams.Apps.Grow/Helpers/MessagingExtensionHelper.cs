@@ -27,12 +27,37 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
     public class MessagingExtensionHelper : IMessagingExtensionHelper
     {
         /// <summary>
+        /// Sets the height of the image in pixel.
+        /// </summary>
+        private const int ImageHeight = 9;
+
+        /// <summary>
+        /// Sets the width of the image in pixel.
+        /// </summary>
+        private const int ImageWidth = 9;
+
+        /// <summary>
+        /// Sets the maximum number of characters for owner name.
+        /// </summary>
+        private const int CreatedByNameMaximumLength = 25;
+
+        /// <summary>
+        /// Sets the maximum number of characters for project title.
+        /// </summary>
+        private const int TitleMaximumLength = 35;
+
+        /// <summary>
+        /// Sets the maximum number of characters for owner name.
+        /// </summary>
+        private const int CreatedByNameSubstringLength = 24;
+
+        /// <summary>
         /// Date time format to support adaptive card text feature.
         /// </summary>
         /// <remarks>
         /// refer adaptive card text feature https://docs.microsoft.com/en-us/adaptive-cards/authoring-cards/text-features#datetime-formatting-and-localization
         /// </remarks>
-        public const string Rfc3339DateTimeFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
+        private const string Rfc3339DateTimeFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
 
         /// <summary>
         /// Search text parameter name in the manifest file.
@@ -219,13 +244,15 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                     });
 
                 var projectStatusIcon = $"<img src='{this.options.Value.AppBaseUri}/Artifacts/{status.IconName}' alt={this.localizer.GetString("ProjectStatusIcon")} width='12px' height='12px'>";
-                var nameString = project.CreatedByName.Length < 25 ? HttpUtility.HtmlEncode(project.CreatedByName) :
-                    $"{HttpUtility.HtmlEncode(project.CreatedByName.Substring(0, 24))}...";
+                var nameString = project.CreatedByName.Length < CreatedByNameMaximumLength ? HttpUtility.HtmlEncode(project.CreatedByName) :
+                   $"{HttpUtility.HtmlEncode(project.CreatedByName.Substring(0, CreatedByNameSubstringLength))}...";
+                var titleString = project.Title.Length < TitleMaximumLength ? HttpUtility.HtmlEncode(project.Title) :
+                    $"{HttpUtility.HtmlEncode(project.Title.Substring(0, TitleMaximumLength))}...";
 
                 ThumbnailCard previewCard = new ThumbnailCard
                 {
-                    Title = $"<p style='font-weight: 600;'>{project.Title}</p>",
-                    Text = $"{nameString} | {projectStatusIcon} {this.projectStatusHelper.GetStatus(project.Status)}",
+                    Title = $"<p style='font-weight: 600;' title='{project.Title}'>{titleString}</p>",
+                    Text = $"{nameString} | {projectStatusIcon} {this.projectStatusHelper.GetStatus(project.Status).StatusName}",
                 };
 
                 composeExtensionResult.Attachments.Add(new Attachment
@@ -281,13 +308,12 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                         {
                             new AdaptiveColumn
                             {
-                                Width = AdaptiveColumnWidth.Stretch,
+                                Width = AdaptiveColumnWidth.Auto,
                                 Items = new List<AdaptiveElement>
                                 {
                                     new AdaptiveTextBlock
                                     {
-                                        Text = $"**{this.localizer.GetString("TeamSizeText")}{":"}** {projectEntity.TeamSize}",
-                                        Wrap = true,
+                                        Text = $"**{this.localizer.GetString("StatusLabel")}:** ",
                                     },
                                 },
                             },
@@ -300,10 +326,11 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                                     new AdaptiveImage
                                     {
                                         Url = new Uri($"{this.options.Value.AppBaseUri}/Artifacts/{status.IconName}"),
-                                        PixelHeight = 9,
-                                        PixelWidth = 9,
+                                        PixelHeight = ImageHeight,
+                                        PixelWidth = ImageWidth,
                                         Style = AdaptiveImageStyle.Default,
                                         Height = AdaptiveHeight.Auto,
+                                        HorizontalAlignment = AdaptiveHorizontalAlignment.Right,
                                     },
                                 },
                                 Spacing = AdaptiveSpacing.Small,
@@ -311,19 +338,37 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
                             new AdaptiveColumn
                             {
                                 Width = AdaptiveColumnWidth.Stretch,
-                                VerticalContentAlignment = AdaptiveVerticalContentAlignment.Center,
+                                VerticalContentAlignment = AdaptiveVerticalContentAlignment.Top,
                                 Items = new List<AdaptiveElement>
                                 {
                                     new AdaptiveTextBlock
                                     {
-                                        Text = status.StatusName,
-                                        Spacing = AdaptiveSpacing.None,
+                                        Text = $" {status.StatusName}",
+                                        Spacing = AdaptiveSpacing.Small,
                                         IsSubtle = true,
                                         Wrap = true,
                                         Weight = AdaptiveTextWeight.Bolder,
                                     },
                                 },
                                 Spacing = AdaptiveSpacing.Small,
+                            },
+                        },
+                    },
+                    new AdaptiveColumnSet
+                    {
+                        Columns = new List<AdaptiveColumn>
+                        {
+                            new AdaptiveColumn
+                            {
+                                Width = AdaptiveColumnWidth.Stretch,
+                                Items = new List<AdaptiveElement>
+                                {
+                                    new AdaptiveTextBlock
+                                    {
+                                        Text = $"**{this.localizer.GetString("TeamSizeText")}{":"}** {projectEntity.TeamSize}",
+                                        Wrap = true,
+                                    },
+                                },
                             },
                         },
                     },

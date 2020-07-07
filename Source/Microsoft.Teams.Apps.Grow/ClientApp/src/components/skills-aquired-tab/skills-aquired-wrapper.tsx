@@ -1,16 +1,14 @@
-﻿// <copyright file="private-list.tsx" company="Microsoft">
+﻿// <copyright file="skills-acquired-wrapper.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Loader, Alert } from "@fluentui/react-northstar";
+import { Loader } from "@fluentui/react-northstar";
 import SkillsAcquiredTable from "./skills-aquired-table";
-import { getUserPrivateListPosts } from "../../api/private-list-api";
+import { getUserAcquiredSkills } from "../../api/acquired-skills-api";
 import NoPrivatePost from '../card-view/filter-no-post-content-page';
-import { IProjectDetails } from "../card-view/discover-wrapper-page";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import NotificationMessage from "../notification-message/notification-message";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../../styles/close-project.css";
@@ -61,10 +59,10 @@ class SkillsAcquiredWrapperPage extends React.Component<WithTranslation, ISkills
     };
 
     /**
-    * Fetch posts for user private list tab from API
+    * Fetch projects for user private list tab from API
     */
     getProjectSkillsAcquired = async () => {
-        let response = await getUserPrivateListPosts();
+        let response = await getUserAcquiredSkills();
         if (response.status === 200 && response.data) {
             this.setState({
                 projectSkillsDetails: response.data

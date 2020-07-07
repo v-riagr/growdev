@@ -1,4 +1,8 @@
-﻿import { IDatePickerStyleProps, IDatePickerStyles } from 'office-ui-fabric-react';
+﻿// <copyright file="DatePickerStyles.ts" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import { IDatePickerStyleProps, IDatePickerStyles } from 'office-ui-fabric-react';
 import { DarkTheme } from './DarkCustomizations';
 
 export const DatePickerStyles = (props: IDatePickerStyleProps): Partial<IDatePickerStyles> => {

@@ -4,15 +4,14 @@
 
 import * as React from "react";
 import { Flex, Text, Divider, Dialog, Provider } from "@fluentui/react-northstar";
-import { TrashCanIcon } from "@fluentui/react-icons-northstar";
-import EditItemDialog from "../edit-project-dialog/edit-project-dialog";
+import { TrashCanIcon, LeaveIcon } from "@fluentui/react-icons-northstar";
 import JoinProjectDialog from "../join-project-dialog/join-project-dialog-wrapper";
 import { Container } from "react-bootstrap";
 import { IProjectDetails } from "./discover-wrapper-page";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 import * as microsoftTeams from "@microsoft/teams-js";
-import CloseProjectDialog from "../close-project/CloseProjectDialog";
+import CloseProjectDialog from "../close-project/close-project-dialog";
 
 import "../../styles/more-menu-content.css";
 import Resources from "../../constants/resources";
@@ -66,7 +65,7 @@ class MoreMenuContent extends React.Component<IMoreMenuContentProps, IAppState> 
                                 confirmButton={this.localize("Confirm")}
                                 content={this.localize("leaveConfirmBodyText")}
                                 header={this.localize("leaveConfirmTitleText")}
-                                trigger={<Flex vAlign="center" className={className}><TrashCanIcon outline /> <Text className="popup-menu-item-text" content={this.localize("leaveProject")} /></Flex>}
+                                trigger={<Flex vAlign="center" className={className}><LeaveIcon outline /> <Text className="popup-menu-item-text" content={this.localize("leaveProject")} /></Flex>}
                                 onConfirm={() => this.props.onMenuItemClick(4)}
                             />
                         </Container>
@@ -90,7 +89,7 @@ class MoreMenuContent extends React.Component<IMoreMenuContentProps, IAppState> 
                                         ?
                                         <>
                                             <CloseProjectDialog cardDetails={this.props.cardDetails} onCloseProjectButtonClick={this.props.onCloseProjectButtonClick} />
-                                            <Divider />
+                                            <Divider /> 
                                         </>
                                         :
                                         <></>

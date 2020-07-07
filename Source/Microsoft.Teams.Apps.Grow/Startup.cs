@@ -43,6 +43,7 @@ namespace Microsoft.Teams.Apps.Grow
         /// </remarks>
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddConfidentialCredentialProvider(this.configuration);
             services.AddCredentialProviders(this.configuration);
             services.AddConfigurationSettings(this.configuration);
             services.AddHelpers(this.configuration);

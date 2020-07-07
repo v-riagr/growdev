@@ -18,11 +18,6 @@ namespace Microsoft.Teams.Apps.Grow.Models
         public string UserId { get; set; }
 
         /// <summary>
-        /// Gets or sets name of project participant.
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
         /// Gets or sets semicolon separated acquired skills by participant.
         /// </summary>
         [Required]

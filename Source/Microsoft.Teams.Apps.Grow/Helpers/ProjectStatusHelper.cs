@@ -27,59 +27,29 @@ namespace Microsoft.Teams.Apps.Grow.Helpers
         }
 
         /// <summary>
-        /// Valid post types.
-        /// </summary>
-        public enum StatusEnum
-        {
-            /// <summary>
-            /// No status.
-            /// </summary>
-            None = 0,
-
-            /// <summary>
-            /// Project not yet started.
-            /// </summary>
-            NotStarted = 1,
-
-            /// <summary>
-            /// Project is active.
-            /// </summary>
-            Active = 2,
-
-            /// <summary>
-            /// Project is blocked.
-            /// </summary>
-            Blocked = 3,
-
-            /// <summary>
-            /// Project is closed.
-            /// </summary>
-            Closed = 4,
-        }
-
-        /// <summary>
         /// Get the status using its id.
         /// </summary>
         /// <param name="key">Status id value.</param>
         /// <returns>Returns a localized status from the id value.</returns>
-        public ProjectStatus GetStatus(int key)
+        public ProjectStatusDisplayInfo GetStatus(int key)
         {
-            return key switch
+            switch (key)
             {
-                (int)StatusEnum.NotStarted =>
-                    new ProjectStatus { StatusName = this.localizer.GetString("NotStartedStatusType"), IconName = "notStartedStatusDot.png", StatusId = 1 },
+                case (int)ProjectStatus.NotStarted:
+                    return new ProjectStatusDisplayInfo { StatusName = this.localizer.GetString("NotStartedStatusType"), IconName = "notStartedStatusDot.png", StatusId = 1 };
 
-                (int)StatusEnum.Active =>
-                    new ProjectStatus { StatusName = this.localizer.GetString("ActiveStatusType"), IconName = "activeStatusDot.png", StatusId = 2 },
+                case (int)ProjectStatus.Active:
+                    return new ProjectStatusDisplayInfo { StatusName = this.localizer.GetString("ActiveStatusType"), IconName = "activeStatusDot.png", StatusId = 2 };
 
-                (int)StatusEnum.Blocked =>
-                    new ProjectStatus { StatusName = this.localizer.GetString("BlockedStatusType"), IconName = "blockedStatusDot.png", StatusId = 3 },
+                case (int)ProjectStatus.Blocked:
+                    return new ProjectStatusDisplayInfo { StatusName = this.localizer.GetString("BlockedStatusType"), IconName = "blockedStatusDot.png", StatusId = 3 };
 
-                (int)StatusEnum.Closed =>
-                    new ProjectStatus { StatusName = this.localizer.GetString("ClosedStatusType"), IconName = "closedStatusDot.png", StatusId = 4 },
+                case (int)ProjectStatus.Closed:
+                    return new ProjectStatusDisplayInfo { StatusName = this.localizer.GetString("ClosedStatusType"), IconName = "closedStatusDot.png", StatusId = 4 };
 
-                _ => null,
-            };
+                default:
+                    return null;
+            }
         }
     }
 }

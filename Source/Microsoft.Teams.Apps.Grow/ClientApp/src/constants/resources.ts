@@ -30,20 +30,13 @@ export default class Resources {
 	public static readonly submitJoinProjectTaskModule: string = "joinproject";
 	public static readonly closePreferencesTaskModule: string = "close";
 
-	// Text
-	public static readonly weeklyDigestFrequencyText: string = "Weekly";
-	public static readonly monthlyDigestFrequencyText: string = "Monthly";
-	public static readonly digestFrequencyRadioName: string = "frequency";
-
     public static readonly lazyLoadPerPagePostCount: number = 50;
 	public static readonly maxPrivateListPostCount: number = 50;
 	public static readonly postTitleMaxLength: number = 100;
     public static readonly postDesriptionMaxLength: number = 400;
     public static readonly postDesriptionMinLength: number = 200;
 	public static readonly postContentUrlMaxLength: number = 400;
-	public static readonly tagMaxLength: number = 20;
-    public static readonly tagsMaxCount: number = 3;
-    public static readonly tagsMaxCountPreferences: number = 5;
+    public static readonly skillsMaxCountPreferences: number = 5;
     public static readonly closeProjectAcquiredSkillsMaxLength: number = 20;
     public static readonly closeProjectFeedBackMaxLength: number = 250;
 

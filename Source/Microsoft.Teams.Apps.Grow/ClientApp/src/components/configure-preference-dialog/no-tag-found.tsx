@@ -6,14 +6,14 @@ import * as React from "react";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 
-interface INoTagFoundProps extends WithTranslation {
+interface INoSkillFoundProps extends WithTranslation {
     node: any;
-    closeNoTagFoundBox: () => void;
+    closeNoSkillFoundBox: () => void;
 }
 
-class NoTagFound extends React.Component<INoTagFoundProps> {
+class NoSkillFound extends React.Component<INoSkillFoundProps> {
     localize: TFunction;
-    constructor(props: INoTagFoundProps) {
+    constructor(props: INoSkillFoundProps) {
         super(props);
         this.localize = this.props.t;
     }
@@ -39,7 +39,7 @@ class NoTagFound extends React.Component<INoTagFoundProps> {
     handleClick = (event) => {
 
         if (!this.props.node.contains(event.target)) {
-            this.props.closeNoTagFoundBox();
+            this.props.closeNoSkillFoundBox();
         }
     }
 
@@ -52,8 +52,7 @@ class NoTagFound extends React.Component<INoTagFoundProps> {
                 {this.localize("noTagFoundError")}
             </div>
         )
-
     }
 }
 
-export default withTranslation()(NoTagFound)
+export default withTranslation()(NoSkillFound)

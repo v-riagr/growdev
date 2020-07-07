@@ -31,17 +31,17 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         /// <summary>
         /// Azure Search service index name.
         /// </summary>
-        private const string IndexName = "project-index";
+        private const string IndexName = "grow-project-index";
 
         /// <summary>
         /// Azure Search service indexer name.
         /// </summary>
-        private const string IndexerName = "project-indexer";
+        private const string IndexerName = "grow-project-indexer";
 
         /// <summary>
         /// Azure Search service data source name.
         /// </summary>
-        private const string DataSourceName = "project-storage";
+        private const string DataSourceName = "grow-project-storage";
 
         /// <summary>
         /// Table name where project data will get saved.
@@ -92,6 +92,11 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         private readonly AsyncRetryPolicy retryPolicy;
 
         /// <summary>
+        /// Helper for creating models and filtering projects as per criteria.
+        /// </summary>
+        private readonly IProjectHelper projectHelper;
+
+        /// <summary>
         /// Flag: Has Dispose already been called?
         /// </summary>
         private bool disposed = false;
@@ -104,12 +109,14 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         /// <param name="logger">Instance to send logs to the Application Insights service.</param>
         /// <param name="searchServiceClient">Search service client dependency injection.</param>
         /// <param name="searchIndexClient">Search index client dependency injection.</param>
+        /// <param name="projectHelper">Helper for creating models and filtering projects as per criteria.</param>
         public ProjectSearchService(
             IOptions<SearchServiceSetting> optionsAccessor,
             IProjectStorageProvider projectStorageProvider,
             ILogger<ProjectSearchService> logger,
             ISearchServiceClient searchServiceClient,
-            ISearchIndexClient searchIndexClient)
+            ISearchIndexClient searchIndexClient,
+            IProjectHelper projectHelper)
         {
             optionsAccessor = optionsAccessor ?? throw new ArgumentNullException(nameof(optionsAccessor));
 
@@ -124,6 +131,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
                 ex => (int)ex.Response.StatusCode == StatusCodes.Status409Conflict ||
                 (int)ex.Response.StatusCode == StatusCodes.Status429TooManyRequests)
                 .WaitAndRetryAsync(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(2000), 2));
+            this.projectHelper = projectHelper;
         }
 
         /// <summary>
@@ -150,6 +158,12 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
 
             SearchContinuationToken continuationToken = null;
             var projectsCollection = new List<ProjectEntity>();
+
+            if (searchScope == ProjectSearchScope.SearchProjects && !string.IsNullOrWhiteSpace(searchQuery))
+            {
+                searchQuery = this.projectHelper.EscapeCharactersInQuery(searchQuery);
+            }
+
             var projectResult = await this.searchIndexClient.Documents.SearchAsync<ProjectEntity>(searchQuery, searchParameters);
 
             if (projectResult?.Results != null)
@@ -182,7 +196,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         /// Creates Index, Data Source and Indexer for search service.
         /// </summary>
         /// <returns>A task that represents the work queued to execute.</returns>
-        public async Task RecreateSearchServiceIndexAsync()
+        public async Task CreateSearchServiceIndexAsync()
         {
             try
             {
@@ -261,7 +275,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
             {
                 // When there is no project created by user and Messaging Extension is open, table initialization is required here before creating search index or data source or indexer.
                 await this.projectStorageProvider.GetProjectAsync(string.Empty, string.Empty);
-                await this.RecreateSearchServiceIndexAsync();
+                await this.CreateSearchServiceIndexAsync();
             }
             catch (Exception ex)
             {
@@ -278,7 +292,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         {
             if (await this.searchServiceClient.Indexes.ExistsAsync(IndexName))
             {
-                await this.searchServiceClient.Indexes.DeleteAsync(IndexName);
+                return;
             }
 
             var tableIndex = new Index()
@@ -318,7 +332,7 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
         {
             if (await this.searchServiceClient.Indexers.ExistsAsync(IndexerName))
             {
-                await this.searchServiceClient.Indexers.DeleteAsync(IndexerName);
+                return;
             }
 
             var indexer = new Indexer()
@@ -379,7 +393,6 @@ namespace Microsoft.Teams.Apps.Grow.Common.SearchServices
                     nameof(ProjectEntity.TeamSize),
                     nameof(ProjectEntity.IsRemoved),
                     nameof(ProjectEntity.ProjectParticipantsUserIds),
-                    nameof(ProjectEntity.ProjectParticipantsUserMapping),
                     nameof(ProjectEntity.ProjectClosedDate),
                 },
                 SearchFields = new[] { nameof(ProjectEntity.Title) },

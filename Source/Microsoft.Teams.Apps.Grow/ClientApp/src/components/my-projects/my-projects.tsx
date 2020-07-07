@@ -1,13 +1,11 @@
-﻿// <copyright file="title-bar.tsx" company="Microsoft">
+﻿// <copyright file="my-projects.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
 import * as React from "react";
-import { Loader, Menu } from "@fluentui/react-northstar";
-import { getAuthors, getTags } from "../../api/discover-api";
+import { Menu } from "@fluentui/react-northstar";
 import MyCreatedProjects from "../my-projects/my-created-projects";
 import MyJoinedProjects from "../my-joined-projects/my-joined-projects";
-import { IProjectDetails } from "../card-view/discover-wrapper-page";
 import { getMyCreatedProjects, getMyJoinedProjects } from "../../api/discover-api";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
@@ -39,7 +37,7 @@ class TitleBar extends React.Component<WithTranslation, IFilterBarState> {
     }
 
     /**
-  * Get filtered posts based on selected checkboxes.
+  * Get filtered projects based on selected checkboxes.
   */
     getMyProjects = async () => {
         let response = await getMyCreatedProjects(0);
@@ -56,7 +54,7 @@ class TitleBar extends React.Component<WithTranslation, IFilterBarState> {
     }
 
     /**
-    * Fetch posts for Team tab from API
+    * Fetch projects for Team tab from API
     */
     getJoinedProjects = async () => {
         let response = await getMyJoinedProjects(0);
@@ -108,12 +106,13 @@ class TitleBar extends React.Component<WithTranslation, IFilterBarState> {
         const items = [
             {
                 key: 'Created project',
-                content: this.localize("createdByMe") + createdCount,
+                content: this.localize("projectsCreated") + createdCount,
 
             },
+
             {
                 key: 'Joined projects',
-                content: this.localize("joinedProjects") + joinedCount,
+                content: this.localize("projectsJoined") + joinedCount,
             }
         ]
         return (
@@ -121,12 +120,11 @@ class TitleBar extends React.Component<WithTranslation, IFilterBarState> {
                 <div className="container-div">
                     <div className="container-subdiv-myprojects">
                         <Menu
-                            className="project-menu"
                             defaultActiveIndex={0}
+                            primary
                             items={items}
-                            underlined
                             onActiveIndexChange={(e: any, props: any) => this.onMenuItemClick(e, props)}
-                            primary />
+                        />
 
                         {
                             this.state.activeIndex === 0

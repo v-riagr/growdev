@@ -9,6 +9,61 @@
     padding-left: 0.5rem !important;
 }
 
+.divider-for-small-device {
+    width: 83.5%;
+    max-width: 83.5% !important;
+}
+
+@media only screen and (max-width: 650px) {
+    .close-project-container {
+        width: 100% !important;
+        height: 100% !important;
+        margin-left: 2rem;
+    }
+
+    .divider-for-small-device {
+        width: 100%;
+        max-width: 100% !important;
+    }
+
+    .dialog-container-close-project {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        padding-left: 0.5rem !important;
+        align-content: start;
+        padding-top: 0;
+    }
+
+    .list-view-container {
+        width: 98% !important;
+        height: 50vh !important;
+        overflow: auto;
+    }
+
+    .description-textarea {
+        width: 98% !important;
+        height: 3rem !important;
+        margin-top: 0.5rem !important;
+    }
+
+    .skills-input input {
+        width: 98% !important;
+        margin-top: 1rem;
+    }
+
+    .dialog-footer-wrapper {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        padding-bottom: 3rem;
+        padding-left: 2.5rem;
+        padding-right: 3rem;
+        align-content: flex-end;
+    }
+}
+
 .no-participant-joined {
     margin-left: 35%;
     margin-top: 7rem;
@@ -130,12 +185,15 @@
 
 .skills-label-wrapper {
     padding-top: 0.5rem !important;
-    padding-bottom: 1.5rem !important;
     padding-left: 1rem !important;
     padding-right: 1rem !important;
     margin-top: 1rem !important;
     height: 2.67rem !important;
     margin-right: 0.33rem !important;
+}
+.dark-container .skills-label-wrapper {
+    background-color: #484644 !important;
+    color: #ffffff !important;
 }
 
     .skills-label-wrapper div.ui-box {
@@ -206,23 +264,29 @@
     width: inherit;
     margin-bottom: 1rem;
     margin-left: 0rem !important;
+    cursor:pointer;
 }
 
 .document-url-text-form {
+    color: #6264A7 !important;
+    max-width: 49rem;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 15rem;
-    white-space: nowrap;
-    color: #0000EE !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
 }
 
 .document-url-label-wrapper {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
     height: 2.67rem !important;
-    background-color:white !important;
     width: 100%;
     margin-right: 0.33rem !important;
+}
+
+.dark-container .document-url-label-wrapper {
+    background-color: rgb(32, 31, 31) !important;
 }
 
 .document-url-label-wrapper:hover{

@@ -7,7 +7,6 @@ import { Popup } from "@fluentui/react-northstar";
 import { MoreIcon } from "@fluentui/react-icons-northstar";
 import { IProjectDetails } from "./discover-wrapper-page";
 import MoreMenuContent from "./more-menu-content";
-import { useTranslation } from 'react-i18next';
 
 import "../../styles/more-menu.css";
 
@@ -24,7 +23,6 @@ interface IPopupMoreMenu {
 }
 
 const PopupMoreMenu: React.FunctionComponent<IPopupMoreMenu> = props => {
-    const localize = useTranslation().t;
     const [menuOpen, setMenuOpen] = React.useState(false);
 
 	/**

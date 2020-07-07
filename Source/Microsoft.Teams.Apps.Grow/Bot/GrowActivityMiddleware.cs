@@ -7,7 +7,6 @@ namespace Microsoft.Teams.Apps.Grow.Bot
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.Bot.Builder;
     using Microsoft.Bot.Schema;
     using Microsoft.Extensions.Logging;
@@ -67,7 +66,7 @@ namespace Microsoft.Teams.Apps.Grow.Bot
 
             if (turnContext != null && turnContext.Activity.Type != ActivityTypes.Event && !this.IsActivityFromExpectedTenant(turnContext))
             {
-                this.logger.LogWarning($"Unexpected tenant id {turnContext?.Activity.Conversation.TenantId}", SeverityLevel.Warning);
+                this.logger.LogWarning($"Unexpected tenant id {turnContext?.Activity.Conversation.TenantId}");
             }
             else
             {

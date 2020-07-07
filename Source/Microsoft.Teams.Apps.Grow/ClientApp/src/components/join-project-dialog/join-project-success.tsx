@@ -1,4 +1,4 @@
-﻿// <copyright file="error-page.tsx" company="Microsoft">
+﻿// <copyright file="join-project-success.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,6 @@ import { Text } from "@fluentui/react-northstar";
 import { AcceptIcon } from "@fluentui/react-icons-northstar";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-
 import "../../styles/join-project-taskmodule-view.css";
 
 interface IErrorPageProps extends WithTranslation, RouteComponentProps {
@@ -18,7 +17,6 @@ class ErrorPage extends React.Component<IErrorPageProps, {}> {
     localize: TFunction;
     constructor(props: any) {
         super(props);
-
         this.localize = this.props.t;
     }
 

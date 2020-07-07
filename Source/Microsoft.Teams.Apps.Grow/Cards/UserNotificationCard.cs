@@ -53,7 +53,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                     {
                         HorizontalAlignment = AdaptiveHorizontalAlignment.Left,
                         Wrap = true,
-                        Text = localizer.GetString("ProjectClosedMessage", ownerName, projectTitle),
+                        Text = localizer.GetString("ProjectClosedMessage", ownerName, projectTitle?.Trim()),
                     },
                     new AdaptiveTextBlock
                     {
@@ -64,7 +64,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                 },
             };
 
-            if (acquiredSkills.Count > 0)
+            if (acquiredSkills?.Count > 0)
             {
                 projectClosureCard.Body.Add(new AdaptiveTextBlock
                 {
@@ -132,7 +132,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                     {
                         HorizontalAlignment = AdaptiveHorizontalAlignment.Left,
                         Wrap = true,
-                        Text = localizer.GetString("ProjectDeletedMessage", ownerName, projectTitle),
+                        Text = localizer.GetString("ProjectDeletedMessage", ownerName, projectTitle?.Trim()),
                     },
                     new AdaptiveTextBlock
                     {
@@ -189,7 +189,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                     {
                         HorizontalAlignment = AdaptiveHorizontalAlignment.Left,
                         Wrap = true,
-                        Text = localizer.GetString("ProjectRemovalMessage", ownerName, projectTitle),
+                        Text = localizer.GetString("ProjectRemovalMessage", ownerName, projectTitle?.Trim()),
                     },
                     new AdaptiveTextBlock
                     {
@@ -250,7 +250,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                     {
                         HorizontalAlignment = AdaptiveHorizontalAlignment.Left,
                         Wrap = true,
-                        Text = localizer.GetString("ProjectJoinedMessage", userName, projectTitle.Trim()),
+                        Text = localizer.GetString("ProjectJoinedMessage", userName, projectTitle?.Trim()),
                     },
                     new AdaptiveTextBlock
                     {
@@ -273,7 +273,7 @@ namespace Microsoft.Teams.Apps.Grow.Cards
                     Title = localizer.GetString("ProjectDetails"),
                     Data = new AdaptiveSubmitActionData
                     {
-                        Msteams = new TaskModuleAction(Constants.ViewProjectDetail, JsonConvert.SerializeObject(new AdaptiveTaskModuleCardAction { Text = Constants.ViewProjectDetail, ProjectId = projectId })),
+                        Msteams = new TaskModuleAction(Constants.ViewProjectDetail, JsonConvert.SerializeObject(new AdaptiveTaskModuleCardAction { Text = Constants.ViewProjectDetail, ProjectId = projectId, CreatedByUserId = createdByUserId })),
                     },
                 },
             };

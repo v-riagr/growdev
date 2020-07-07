@@ -30,7 +30,7 @@ const PopupMenuWrapper: React.FunctionComponent<IPopupMenuWrapperProps> = props 
 				align="end"
                 position="below"
                 onOpenChange={(e, { open }: any) => onOpenChange({ isOpen: open })}
-                trigger={<Button content={props.title} iconPosition="after" icon={<ChevronDownIcon />} text />}
+				trigger={<Button content={props.title} className={`${popup.isOpen ? "gray-background" : "no-background"}`} iconPosition="after" icon={<ChevronDownIcon />} text />}
 				content={<PopupMenuCheckboxesContent showSearchBar={props.showSearchBar!} content={{ checkboxes: props.checkboxes, title: props.title }} onCheckboxStateChange={props.onCheckboxStateChange} />}
 				trapFocus
 			/>
@@ -43,7 +43,7 @@ const PopupMenuWrapper: React.FunctionComponent<IPopupMenuWrapperProps> = props 
 				align="end"
 				position="below"
                 onOpenChange={(e, { open }: any) => onOpenChange({ isOpen: open })}
-                trigger={<Button icon={<ChevronDownIcon />} iconPosition="after" content={props.title} text />}
+				trigger={<Button icon={<ChevronDownIcon />} className={`${popup.isOpen ? "gray-background" : "no-background"}`} iconPosition="after" content={props.title} text />}
 				content={<PopupMenuRadiogroupContent selectedValue={props.selectedSortBy!} content={{ radioGroupItems: props.radioGroup, title: props.title }} onRadiogroupStateChange={props.onRadiogroupStateChange} />}
 				trapFocus
 			/>

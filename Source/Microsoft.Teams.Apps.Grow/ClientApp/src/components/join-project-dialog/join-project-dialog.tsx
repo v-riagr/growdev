@@ -3,18 +3,17 @@
 // </copyright>
 
 import * as React from "react";
-import { Button, Flex, Text, Provider } from "@fluentui/react-northstar";
+import { Button, Flex, Text, Provider, Label } from "@fluentui/react-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";
-import Skill from "../close-project/skills";
 import DocumentUrl from "../new-project-dialog/document-url";
 import { IProjectDetails } from '../card-view/discover-wrapper-page';
 import { getProjectDetailToJoin } from "../../api/discover-api";
 import { WithTranslation, withTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import { getLocalizedPostTypes } from "../../helpers/helper";
 import Resources from "../../constants/resources";
 
 import "../../styles/join-project-taskmodule-view.css";
+import "../../styles/new-project-dialog.css";
 
 var moment = require('moment');
 
@@ -25,6 +24,7 @@ interface IJoinProjectDialogContentState {
     isEditDialogOpen: boolean;
     isLoading: boolean;
     showLoader: boolean;
+    theme: string;
 }
 
 class JoinProjectDialogContent extends React.Component<WithTranslation
@@ -47,7 +47,6 @@ class JoinProjectDialogContent extends React.Component<WithTranslation
         this.currentUserId = params.get("currentUserId")!;
         this.createdByUserId = params.get("createdByUserId")!;
 
-        let localizedPostTypes = getLocalizedPostTypes(this.localize);
         this.state = {
             skillList: [],
             documentUrlList: [],
@@ -69,12 +68,12 @@ class JoinProjectDialogContent extends React.Component<WithTranslation
                 isJoinedByUser: false,
                 isCurrentUserProject: false,
                 avatarBackgroundColor: "",
-                projectParticipantsUserMapping: "",
                 projectParticipantsUserIds: "",
             },
             isEditDialogOpen: false,
             isLoading: true,
-            showLoader: false
+            showLoader: false,
+            theme:""
         }
     }
 
@@ -85,10 +84,11 @@ class JoinProjectDialogContent extends React.Component<WithTranslation
         microsoftTeams.initialize();
         microsoftTeams.getContext((context: microsoftTeams.Context) => {
             this.upn = context.upn!;
+            this.setState({ theme: context.theme! });
         });
         let response = await getProjectDetailToJoin(this.projectId, this.createdByUserId);
 
-        if (response.status == 200 && response.data) {
+        if (response.status === 200 && response.data) {
             this.setState({
                 projectDetails: response.data
             });
@@ -147,97 +147,104 @@ class JoinProjectDialogContent extends React.Component<WithTranslation
         if (this.state.isLoading === false) {
             return (
                 <Provider className="join-project-dialog-provider-wrapper-taskview">
-                    <Flex>
+                    <Flex styles={{height:"45rem"}}>
                         <div className="join-project-dialog-body-taskview">
-                            <Flex gap="gap.smaller" className="input-label-space-between-taskview">
+                            <Flex gap="gap.smaller" className="input-label-space-between-taskview" styles={{ fontSize: "12px" }}>
                                 <Flex.Item>
-                                    <Text className="project-title-taskview" content={this.state.projectDetails.title} />
+                                    <Text styles={{ fontSize:"18px" }} className="project-title-taskview" content={this.state.projectDetails.title} />
                                 </Flex.Item>
                             </Flex>
-                            <Flex gap="gap.smaller" className="label-spacing-taskview joined-project-text-area-taskview input-label-space-between-taskview">
-                                <Flex.Item>
-                                    <Text className="joined-project-text-area-taskview" content={this.state.projectDetails.description} />
-                                </Flex.Item>
-                            </Flex>
-                            <Flex gap="gap.small">
-                                <div className="joined-project-half-field-taskview label-spacing-taskview">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview edit-team-size-space">
-                                        <Flex.Item>
-                                            <Text content={this.localize("projectDurationLabel") + " :"} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                                <div className="joined-project-half-field-taskview label-spacing-taskview bold-value content-width">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview edit-team-size-space">
-                                        <Flex.Item>
-                                            <Text content={startDate + " - " + endDate} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                            </Flex>
-                            <Flex gap="gap.small">
-                                <div className="joined-project-half-field-taskview label-spacing-taskview">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview">
-                                        <Flex.Item>
-                                            <Text content={this.localize("teamSize") + " :"} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                                <div className="joined-project-half-field-taskview label-spacing-taskview left-spacing-teamsize-taskview bold-value">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview">
-                                        <Flex.Item>
-                                            <Text content={this.state.projectDetails.teamSize} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                            </Flex>
-                            <Flex gap="gap.small">
-                                <div className="joined-project-half-field-taskview label-spacing-taskview ">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview">
-                                        <Flex.Item>
-                                            <Text content={this.localize("membersJoinedLabel") + " :"} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                                <div className="joined-project-half-field-taskview label-spacing-taskview left-spacing-joined-taskview bold-value">
-                                    <Flex gap="gap.smaller" className="input-label-space-between-taskview">
-                                        <Flex.Item>
-                                            <Text content={membersJoined} />
-                                        </Flex.Item>
-                                    </Flex>
-                                </div>
-                            </Flex>
-                            <Flex gap="gap.smaller" vAlign="center" className="label-spacing-taskview input-label-space-between-taskview">
-                                <Text content={this.localize("skillsAcquiredLabel") + " :"} />
-                            </Flex>
-                            <Flex gap="gap.smaller" className="skills-flex skills-new-project" vAlign="center">
-                                <div>
-                                    {
-                                        this.state.skillList.map((value: string, index) => {
-                                            if (value.trim().length > 0) {
-                                                return <Skill projectMemberIndex={0} index={index} skillContent={value.trim()} showRemoveIcon={false} onRemoveClick={this.onSkillRemoveClick} />
-                                            }
-                                        })
-                                    }
-                                </div>
-                            </Flex>
-                            <Flex gap="gap.smaller" className="label-spacing-taskview input-fields-margin-between-add-post-taskview">
-                                <Text content={this.localize("docLinkFormLabel") + " :"} />
-                            </Flex>
-                            <Flex gap="gap.smaller" className="document-url-flex" vAlign="center">
-                                <div>
-                                    {
-                                        this.state.documentUrlList.map((value: string, index) => {
-                                            if (value.trim().length > 0) {
-                                                return <DocumentUrl index={index} urlContent={value.trim()} showDeleteIcon={false} onRemoveClick={this.onLinkRemoveClick} />
-                                            }
-                                            else {
-                                                return <Text className="no-url-added" content={this.localize("noLinksAdded")} />
-                                            }
-                                        })
-                                    }
-                                </div>
-                            </Flex>
+                            <div style={{fontSize:"12px"}}>
+                                <Flex gap="gap.smaller" className="label-spacing-taskview joined-project-text-area-taskview input-label-space-between-taskview">
+                                    <Flex.Item>
+                                        <Text className="joined-project-text-area-taskview" content={this.state.projectDetails.description} />
+                                    </Flex.Item>
+                                </Flex>
+                                <Flex gap="gap.small">
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview edit-team-size-space">
+                                            <Flex.Item>
+                                                <Text content={this.localize("projectDurationLabel") + " :"} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview bold-value content-width">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview edit-team-size-space">
+                                            <Flex.Item>
+                                                <Text weight="semibold" content={startDate + " - " + endDate} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                </Flex>
+                                <Flex gap="gap.small">
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview">
+                                            <Flex.Item>
+                                                <Text content={this.localize("teamSize") + " :"} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview left-spacing-teamsize-taskview bold-value">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview">
+                                            <Flex.Item>
+                                                <Text weight="semibold" content={this.state.projectDetails.teamSize} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                </Flex>
+                                <Flex gap="gap.small">
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview ">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview">
+                                            <Flex.Item>
+                                                <Text content={this.localize("membersJoinedLabel") + " :"} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                    <div className="joined-project-half-field-taskview label-spacing-taskview left-spacing-joined-taskview bold-value">
+                                        <Flex gap="gap.smaller" className="input-label-space-between-taskview">
+                                            <Flex.Item>
+                                                <Text weight="semibold" content={membersJoined} />
+                                            </Flex.Item>
+                                        </Flex>
+                                    </div>
+                                </Flex>
+                                <Flex gap="gap.smaller" vAlign="center" className="label-spacing-taskview input-label-space-between-taskview">
+                                    <Text content={this.localize("skillsNeededLabel") + " :"} />
+                                </Flex>
+                                <Flex gap="gap.smaller" className="skills-flex skills-new-project" vAlign="center">
+                                    <div>
+                                        {
+                                            this.state.skillList.map((value: string, index) => {
+                                                if (value.trim().length > 0) {
+                                                    return <Label
+                                                        styles={{ padding: "1rem" }}
+                                                        circular
+                                                        content={<Text className="tag-text-form" content={value.trim()} title={value.trim()} size="small" />}
+                                                        className={this.state.theme === Resources.dark ? "tags-label-wrapper-dark" : "tags-label-wrapper"}
+                                                    />
+                                                }
+                                            })
+                                        }
+                                    </div>
+                                </Flex>
+                                <Flex gap="gap.smaller" className="label-spacing-taskview input-fields-margin-between-add-post-taskview">
+                                    <Text content={this.localize("docLinkFormLabel") + " :"} />
+                                </Flex>
+                                <Flex gap="gap.smaller" className="document-url-flex" vAlign="center">
+                                    <div>
+                                        {
+                                            this.state.documentUrlList.map((value: string, index) => {
+                                                if (value.trim().length > 0) {
+                                                    return <DocumentUrl showDeleteIcon={false} index={index} urlContent={value.trim()} onRemoveClick={() => { }} />
+                                                }
+                                                else {
+                                                    return <Text className="no-url-added" content={this.localize("noLinksAdded")} />
+                                                }
+                                            })
+                                        }
+                                    </div>
+                                </Flex>
+                            </div>
                         </div>
                     </Flex>
                     {

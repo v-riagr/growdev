@@ -16,8 +16,8 @@ import "../../styles/command-bar.css";
 interface ICommandBarProps {
     onFilterButtonClick: () => void;
     onSearchInputChange: (searchString: string) => void;
-    onNewPostSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
-    searchFilterPostsUsingAPI: () => void;
+    onNewProjectSubmit: (isSuccess: boolean, getSubmittedPost: IProjectDetails) => void;
+    searchFilterProjectsUsingAPI: () => void;
     commandBarSearchText: string;
     showSolidFilterIcon: boolean;
     showFilter: boolean;
@@ -34,7 +34,7 @@ const CommandBar: React.FunctionComponent<ICommandBarProps> = props => {
 	*/
     const onTagKeyDown = (event: any) => {
         if (event.key === 'Enter') {
-            props.searchFilterPostsUsingAPI();
+            props.searchFilterProjectsUsingAPI();
         }
     }
 
@@ -43,17 +43,28 @@ const CommandBar: React.FunctionComponent<ICommandBarProps> = props => {
             {props.showFilter ?
                 <>
                     <Flex.Item push>
-                        <Button className="filter-button sdfsdf" icon={props.showSolidFilterIcon ? <Icon iconName="FilterSolid" className="filter-icon-filled" /> : <Icon iconName="Filter" className="filter-icon" />} content={<Text content={localize("filter")} className={props.showSolidFilterIcon ? "filter-icon-filled" : ""} />} text onClick={props.onFilterButtonClick} />
+                        <Button
+                            className="filter-button sdfsdf"
+                            icon={
+                                props.showSolidFilterIcon ?
+                                    <Icon iconName="FilterSolid" className="filter-icon-filled" /> :
+                                    <Icon iconName="Filter" className="filter-icon" />
+                            }
+                            content={
+                                <Text content={localize("filter")} className={props.showSolidFilterIcon ? "filter-icon-filled" : ""} />
+                            }
+                            text
+                            onClick={props.onFilterButtonClick} />
                     </Flex.Item>
 
                     <div className="search-bar-wrapper">
-                        <Input inverted fluid onKeyDown={onTagKeyDown} onChange={(event: any) => props.onSearchInputChange(event.target.value)} value={props.commandBarSearchText} placeholder={localize("searchPlaceholder")} />
-                        <SearchIcon key="search" onClick={(event: any) => props.searchFilterPostsUsingAPI()} className="discover-search-icon" />
+                        <Input icon={<SearchIcon styles={{ display: "none" }} />} inverted fluid onKeyDown={onTagKeyDown} onChange={(event: any) => props.onSearchInputChange(event.target.value)} value={props.commandBarSearchText} placeholder={localize("searchPlaceholder")} />
+                        <SearchIcon key="search" onClick={(event: any) => props.searchFilterProjectsUsingAPI()} className="discover-search-icon" />
                     </div>
                     {
                         props.teamId === "" || props.teamId === undefined || props.teamId === null
                             ?
-                            <NewProjectDialog projectDetails={props.projectDetails} onSubmit={props.onNewPostSubmit} />
+                            <NewProjectDialog projectDetails={props.projectDetails} onSubmit={props.onNewProjectSubmit} />
                             :
                             <></> 
                     }

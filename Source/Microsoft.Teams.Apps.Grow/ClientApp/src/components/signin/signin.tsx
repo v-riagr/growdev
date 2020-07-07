@@ -1,4 +1,8 @@
-﻿import * as React from "react";
+﻿// <copyright file="signin.tsx" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
+
+import * as React from "react";
 import { RouteComponentProps } from "react-router-dom";
 import { Text, Button } from "@fluentui/react-northstar";
 import * as microsoftTeams from "@microsoft/teams-js";

@@ -63,7 +63,7 @@ namespace Microsoft.Teams.Apps.Grow.Models
         /// <summary>
         /// Gets or sets URL's of the supported documents.
         /// </summary>
-        [DocumentLinksValidation(3)]
+        [DocumentLinksValidation(3, 400)]
         public string SupportDocuments { get; set; }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Microsoft.Teams.Apps.Grow.Models
         public string CreatedByName { get; set; }
 
         /// <summary>
-        /// Gets or sets date time when project is updated by owner.
+        /// Gets or sets date time when project details are updated by project owner.
         /// </summary>
         [IsSortable]
         public DateTime UpdatedDate { get; set; }
@@ -123,12 +123,6 @@ namespace Microsoft.Teams.Apps.Grow.Models
         /// </summary>
         [IsSearchable]
         public string ProjectParticipantsUserIds { get; set; }
-
-        /// <summary>
-        /// Gets or sets Semicolon separated key/value pairs for participants id and
-        /// name for a project to display names of participants while closing the project.
-        /// </summary>
-        public string ProjectParticipantsUserMapping { get; set; }
 
         /// <summary>
         /// Gets or sets date time when the project is closed.

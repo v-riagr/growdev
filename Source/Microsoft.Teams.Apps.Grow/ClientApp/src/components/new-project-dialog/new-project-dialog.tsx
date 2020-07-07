@@ -1,4 +1,4 @@
-﻿// <copyright file="add-new-dialog.tsx" company="Microsoft">
+﻿// <copyright file="new-project-dialog.tsx" company="Microsoft">
 // Copyright (c) Microsoft. All rights reserved.
 // </copyright>
 

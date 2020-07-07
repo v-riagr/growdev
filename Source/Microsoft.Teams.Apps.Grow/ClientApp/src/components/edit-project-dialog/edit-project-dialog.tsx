@@ -3,7 +3,7 @@
 // </copyright>
 
 import * as React from "react";
-import { Dialog, Button, Text, EditIcon, Flex } from "@fluentui/react-northstar";
+import { Dialog } from "@fluentui/react-northstar";
 import EditProjectContentDialog from "./edit-project-dialog-content";
 import { IProjectDetails } from "../card-view/discover-wrapper-page";
 import { WithTranslation, withTranslation } from "react-i18next";
